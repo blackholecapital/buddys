@@ -65,6 +65,9 @@ const ROUTE_PERMISSIONS = {
   "POST /api/automation/run-followups": "campaigns:write",
   "GET /api/rate-limits": "dashboard:read",
   "GET /api/health": null, // No auth required
+  "POST /api/leads": null, // Public Buddy lead capture
+  "GET /api/call-now": null, // Signed public callback URL
+  "POST /api/video/session": null, // Public demo, guarded by server-side rate limits
   "GET /api/reconciliation": "settings:read",
   "POST /webhooks": "webhooks:write",
 };
