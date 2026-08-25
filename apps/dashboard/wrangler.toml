@@ -38,6 +38,12 @@ database_id = "__BUDDYS_MESSAGE_TRACK_DB_ID__"
 queue = "buddys-followup-jobs"
 binding = "FOLLOWUP_QUEUE"
 
+# Campaign sends and automated follow-ups are processed by this Worker's queue() handler.
+[[queues.consumers]]
+queue = "buddys-followup-jobs"
+max_batch_size = 20
+max_retries = 3
+
 # Voice/concierge communication telemetry, used for transcripts and activity history.
 [[queues.consumers]]
 queue = "buddys-communication-events"

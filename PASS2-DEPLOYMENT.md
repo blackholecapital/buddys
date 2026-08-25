@@ -88,7 +88,7 @@ The phone voice Worker now targets `https://alley-voice.xyz-labs.xyz`. Browser v
 ```bash
 curl -fsS https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/api/health
 curl -fsS https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev/api/health
-curl -fsS https://buddys-voice-worker.cryptocapitalgroupfl.workers.dev/api/health
+curl -fsS https://buddys-voice-worker.cryptocapitalgroupfl.workers.dev/health
 curl -fsS https://buddys.pages.dev/buddys/images/buddy-avatar.jpg -o /dev/null
 ```
 
