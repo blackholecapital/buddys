@@ -70,7 +70,7 @@ cd apps/sms-worker && npx wrangler@latest deploy
 cd ../email-worker && npx wrangler@latest deploy
 cd ../voice-worker && npx wrangler@latest deploy
 cd ../blackhole-concierge-worker && npx wrangler@latest deploy
-cd ../dashboard && npx wrangler@latest deploy
+cd ../dashboard && npx wrangler@latest deploy --env=""
 
 cd ../frontend
 npm ci
@@ -96,3 +96,11 @@ Then open `https://buddys.pages.dev/buddys/` and test both paths:
 
 1. **Start Live Video Chat** without a lead form.
 2. Submit the lead tile with **Live Video** selected and confirm Buddy receives the saved interest/location context.
+
+Or run the complete public readiness gate from the repository root:
+
+```bash
+node scripts/smoke-public.mjs
+```
+
+Do not call the demo ready until every check prints `PASS`. The relay check deliberately expects an unauthenticated `401`; that proves the protected Buddy-specific route is deployed without exposing its credential.
