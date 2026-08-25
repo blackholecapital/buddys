@@ -84,6 +84,62 @@ async function requestBuddyCall(env,contact,trigger={}){
   await emit(env,{type:"call.requested",contactId:contact.id||"",payload});return result;
 }
 
+
+async function requestBuddyVideoSession(env,payload={}){
+  if(!env.VIDEO)return{ok:false,error:"VIDEO binding not configured"};
+  if(!env.BLACKHOLE_CAPABILITY_TOKEN)throw new Error("BLACKHOLE_CAPABILITY_TOKEN is not configured");
+  const contactId=String(payload.contactId||payload.contact?.id||"").trim();
+  const contact=contactId?await resolveContact(env,contactId,payload):mergeContact(payload.contact||{},payload.context||{});
+  const directSessionId=crypto.randomUUID();
+  const instructions=[
+    "# Identity",
+    "You are Buddy, the friendly AI personal shopper for Buddy's Home Furnishings.",
+    "# Goal",
+    "Help the customer choose among furniture, mattresses, appliances, computers, electronics, smartphones, and gaming products. Ask focused questions about room, size, features, style, budget, timing, and preferred store area.",
+    "# Sales workflow",
+    "If lead context is provided, acknowledge what the customer already requested instead of asking them to repeat it. When the customer settles on a demo product, confirm the exact selection. The existing Buddy workflow will later handle the agreement and delivery scheduling.",
+    "# Guardrails",
+    "Never request or accept card, bank, Social Security, or other payment-source data. Explain that this is a demonstration when exact inventory, pricing, financing approval, or store availability is not connected. Do not invent stock or approval decisions.",
+    "# Voice",
+    "Spoken output only. Be warm, concise, conversational, and useful. Keep most turns under three sentences and ask one clear question at a time.",
+    "# Known customer context",
+    `Name: ${contact.firstName||payload.firstName||"Guest"} ${contact.lastName||payload.lastName||""}. Interest: ${contact.interest||payload.interest||"Not provided"}. Area: ${contact.location||payload.location||"Not provided"}. Notes: ${contact.comments||payload.comments||"None"}.`,
+    "# Reminder",
+    "You are Buddy in a live browser video conversation. Use the known context, keep replies natural, and never ask for payment details."
+  ].join("\n\n").slice(0,5000);
+  const upstream=await env.VIDEO.fetch(new Request("https://blackhole.internal/internal/video/session",{
+    method:"POST",
+    headers:{"content-type":"application/json","x-blackhole-capability-token":String(env.BLACKHOLE_CAPABILITY_TOKEN)},
+    body:JSON.stringify({
+      tenantId:"buddys",
+      product:"buddys-personal-shopper",
+      creatorId:"buddy",
+      creatorName:"Buddy",
+      creatorSlug:"buddy-personal-shopper",
+      fanId:contactId||directSessionId,
+      fanName:[contact.firstName||payload.firstName||"Buddy customer",contact.lastName||payload.lastName||""].filter(Boolean).join(" "),
+      avatarProvider:"lemonslice",
+      avatarSource:"agent-id",
+      lemonsliceAgentId:String(env.BUDDY_LEMONSLICE_AGENT_ID||"agent_9f9ee92bbcec14c3").trim(),
+      avatarImageUrl:"",
+      avatarPrompt:String(env.BUDDY_AVATAR_PROMPT||"Use friendly, attentive upper-body movement and natural hand gestures while speaking.").trim(),
+      voiceProvider:String(env.BUDDY_VIDEO_VOICE_PROVIDER||"eila-runtime").trim(),
+      voiceModel:String(env.BUDDY_VIDEO_VOICE_MODEL||"").trim(),
+      voiceId:String(env.BUDDY_VIDEO_VOICE_ID||"buddy").trim(),
+      instructions,
+      context:{contactId,firstName:contact.firstName||"",lastName:contact.lastName||"",interest:contact.interest||"",location:contact.location||"",comments:contact.comments||"",leadScore:contact.leadScore??payload.leadScore??""}
+    })
+  }));
+  const text=await upstream.text();let data={};try{data=text?JSON.parse(text):{};}catch{data={raw:text};}
+  if(!upstream.ok||data?.ok===false)throw new Error(data?.error||`Black Hole video worker failed (${upstream.status})`);
+  if(contactId){
+    await persistContact(env,contact,{stage:"Engaged",callStatus:"Video session created"});
+    await updateDashboardContact(env,contactId,{stage:"Engaged",callStatus:"Video session created"});
+  }
+  await emit(env,{type:"video.session.created",contactId,room:data.room||"",dispatchId:data.dispatchId||"",source:payload.source||"buddy-web"});
+  return{ok:true,...data,contactId:contactId||undefined};
+}
+
 async function processProductSelection(env,payload={}){
   const contactId=payload.contactId||payload.contact?.id||"",contact=await resolveContact(env,contactId,payload);
   const product={id:payload.productId||payload.product?.id||"",name:payload.productName||payload.product?.name||"",category:payload.category||contact.interest||""};const selectionNumber=Number(payload.selectionNumber||1);
@@ -122,9 +178,10 @@ export default { async fetch(request,env,ctx){
   if(url.pathname==="/internal/contact-status"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;const p=await request.json().catch(()=>({}));const contact=await getSmsContactById(env,p.contactId||"").catch(()=>null)||await getDashboardContact(env,p.contactId||"").catch(()=>null);if(!contact)return Response.json({ok:false,error:"Contact not found"},{status:404});return Response.json({ok:true,contactId:contact.id||p.contactId,documentStatus:contact.documentStatus||"Not sent",selectedProduct:contact.selectedProduct||"",docusignEnvelopeId:contact.docusignEnvelopeId||"",deliveryStatus:contact.deliveryStatus||"Not scheduled",deliveryAt:contact.deliveryAt||"",calendarEventId:contact.calendarEventId||""});}
   if(url.pathname==="/internal/delivery-options"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;try{const p=await request.json().catch(()=>({}));const contact=await resolveContact(env,p.contactId||"",p);if(!contact?.id)return Response.json({ok:false,error:"Contact not found"},{status:404});if(String(contact.documentStatus||"").toLowerCase()!=="signed")return Response.json({ok:false,error:"Agreement must be signed before delivery scheduling"},{status:409});return Response.json({ok:true,contactId:contact.id,selectedProduct:contact.selectedProduct||"",...(await buildDeliveryOptions(env))});}catch(e){return Response.json({ok:false,error:e.message,googleCalendarConfigured:googleCalendarConfigured(env)},{status:502});}}
   if(url.pathname==="/internal/delivery-schedule"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;try{const result=await scheduleDelivery(env,await request.json().catch(()=>({})));return Response.json(result,{status:result.ok?200:result.conflict?409:400});}catch(e){return Response.json({ok:false,error:e.message,googleCalendarConfigured:googleCalendarConfigured(env)},{status:502});}}
-  if(url.pathname==="/internal/leads"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;const payload=await request.json(),method=preferredMethod(payload),contact=payload.contact||{},results={};if(contact.phone&&contact.id){try{results.smsSession={ok:await rememberSmsContact(env,contact)};}catch(e){results.smsSession={ok:false,error:e.message};}}results.email=contact.email?await callBinding(env.EMAIL,"https://email.internal/internal/send",payload):{ok:false,skipped:true};if(!smsConsentGranted(payload))results.sms={ok:false,skipped:true,reason:"SMS consent not granted"};else if(contact.phone){const message=method==="Phone"?`Hi ${contact.firstName||"there"}, I'm Buddy, your Buddy's personal shopping assistant. I received your request${contact.interest?` about ${contact.interest}`:""}. I'll call you in about 15 seconds. Reply STOP to opt out.`:`Hi ${contact.firstName||"there"}, I'm Buddy, your Buddy's personal shopping assistant. I received your request${contact.interest?` about ${contact.interest}`:""}. Would you like me to call you? Reply YES or CALL and I'll ring you. Reply STOP to opt out.`;results.sms=await callBinding(env.SMS,"https://sms.internal/internal/send",{...payload,messageType:method==="Phone"?"buddy-precall":"buddy-welcome",message});}else results.sms={ok:false,skipped:true};const contactFlow=method==="Phone"?"sms-then-call":method==="Text"?"sms-awaiting-call-reply":"email";if(method==="Phone"&&contact.phone){const delayed=(async()=>{await sleep(15000);try{await requestBuddyCall(env,contact,{type:"lead-form",preferredContactMethod:"Phone",delaySeconds:15});}catch(e){await updateDashboardContact(env,contact.id,{callStatus:"Call failed"});}})();if(ctx?.waitUntil)ctx.waitUntil(delayed);}await emit(env,{type:"lead.created",contactId:payload.contactId||contact.id||"",payload});return Response.json({ok:true,preferredContactMethod:method,contactFlow,results});}
+  if(url.pathname==="/internal/leads"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;const payload=await request.json(),method=preferredMethod(payload),contact=payload.contact||{},results={};if(contact.phone&&contact.id){try{results.smsSession={ok:await rememberSmsContact(env,contact)};}catch(e){results.smsSession={ok:false,error:e.message};}}results.email=contact.email?await callBinding(env.EMAIL,"https://email.internal/internal/send",payload):{ok:false,skipped:true};if(!smsConsentGranted(payload))results.sms={ok:false,skipped:true,reason:"SMS consent not granted"};else if(contact.phone){const message=method==="Phone"?`Hi ${contact.firstName||"there"}, I'm Buddy, your Buddy's personal shopping assistant. I received your request${contact.interest?` about ${contact.interest}`:""}. I'll call you in about 15 seconds. Reply STOP to opt out.`:`Hi ${contact.firstName||"there"}, I'm Buddy, your Buddy's personal shopping assistant. I received your request${contact.interest?` about ${contact.interest}`:""}. Would you like me to call you? Reply YES or CALL and I'll ring you. Reply STOP to opt out.`;results.sms=await callBinding(env.SMS,"https://sms.internal/internal/send",{...payload,messageType:method==="Phone"?"buddy-precall":"buddy-welcome",message});}else results.sms={ok:false,skipped:true};const contactFlow=method==="Phone"?"sms-then-call":method==="Text"?"sms-awaiting-call-reply":method==="Video"?"video-room":"email";if(method==="Phone"&&contact.phone){const delayed=(async()=>{await sleep(15000);try{await requestBuddyCall(env,contact,{type:"lead-form",preferredContactMethod:"Phone",delaySeconds:15});}catch(e){await updateDashboardContact(env,contact.id,{callStatus:"Call failed"});}})();if(ctx?.waitUntil)ctx.waitUntil(delayed);}await emit(env,{type:"lead.created",contactId:payload.contactId||contact.id||"",payload});return Response.json({ok:true,preferredContactMethod:method,contactFlow,results});}
   if(url.pathname==="/internal/sms-reply"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;const p=await request.json(),reply=String(p.body||p.Body||p.message||"").trim(),from=p.from||p.From||p.phone||"",wantsCall=/^(yes|y|call|call me|yes please|please call|sure|ok|okay)\b/i.test(reply);let contact=null,source="none";try{contact=await getSmsContact(env,from);if(contact)source="d1-sms-session";}catch{}if(!contact){contact=await getDashboardContactByPhone(env,from);if(contact)source="dashboard-fallback";}console.log("Buddy SMS reply matched",{from,reply,wantsCall,matched:Boolean(contact),source,contactId:contact?.id||""});await emit(env,{type:"sms.reply",contactId:contact?.id||"",from,reply,wantsCall,source});if(!wantsCall)return Response.json({ok:true,action:"none",matched:Boolean(contact),source});if(!contact)return Response.json({ok:false,error:"No Buddy lead matched the replying phone number"},{status:404});try{return Response.json({ok:true,action:"call",contactId:contact.id,source,call:await requestBuddyCall(env,contact,{type:"sms-reply",reply,source})});}catch(e){await updateDashboardContact(env,contact.id,{callStatus:"Call failed"});return Response.json({ok:false,error:e.message,contactId:contact.id,source},{status:502});}}
   if(url.pathname==="/internal/calls"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;const p=await request.json(),contact=p.contact||await getSmsContactById(env,p.contactId||"")||await getDashboardContact(env,p.contactId||"");if(!contact)return Response.json({ok:false,error:"Contact not found"},{status:404});try{return Response.json({ok:true,service:"voice",result:await requestBuddyCall(env,contact,p.trigger||{type:"manual"})});}catch(e){return Response.json({ok:false,service:"voice",error:e.message},{status:502});}}
+  if(url.pathname==="/internal/video/session"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;try{return Response.json(await requestBuddyVideoSession(env,await request.json().catch(()=>({}))));}catch(e){return Response.json({ok:false,error:e.message},{status:502});}}
   if(url.pathname==="/internal/product-selected"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;try{return Response.json(await processProductSelection(env,await request.json()));}catch(e){return Response.json({ok:false,error:e.message,docusignConfigured:docusignConfigured(env)},{status:502});}}
   if(url.pathname==="/docusign/connect"&&request.method==="POST"){const contentType=request.headers.get("content-type")||"",payload=contentType.includes("json")?await request.json().catch(()=>({})):{raw:await request.text()},contactId=url.searchParams.get("contactId")||"",envelopeId=payload?.data?.envelopeId||payload?.envelopeId||"",status=String(payload?.data?.envelopeSummary?.status||payload?.status||payload?.event||"unknown");if(/completed/i.test(status)){await updateDashboardContact(env,contactId,{stage:"Docs Sent",documentStatus:"Signed",docusignEnvelopeId:envelopeId});const contact=await getSmsContactById(env,contactId).catch(()=>null)||await getDashboardContact(env,contactId).catch(()=>null);if(contact){const signed=await persistContact(env,contact,{stage:"Docs Sent",documentStatus:"Signed",docusignEnvelopeId:envelopeId||contact.docusignEnvelopeId});if(signed.smsConsent!==false&&signed.phone)await callBinding(env.SMS,"https://sms.internal/internal/send",{contactId,contact:signed,messageType:"buddy-docusign-signed",message:`Thanks${signed.firstName?`, ${signed.firstName}`:""}. We received your signed Buddy's agreement${signed.selectedProduct?` for the ${signed.selectedProduct}`:""}. Next, we'll set up your delivery. Reply STOP to opt out.`});if(signed.email)await callBinding(env.EMAIL,"https://email.internal/internal/send",{contactId,contact:signed,messageType:"buddy-docusign-signed",productName:signed.selectedProduct||""});}}await emit(env,{type:"docusign.webhook",contactId,envelopeId,status,payload});return Response.json({ok:true});}
   if(url.pathname==="/docusign/return"){
