@@ -9,6 +9,13 @@ DASHBOARD_URL = "https://blackhole-dashboard-worker.cryptocapitalgroupfl.workers
 DOCUSIGN_BASE_PATH = "https://demo.docusign.net/restapi"
 DOCUSIGN_RETURN_URL = "https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev"
 DOCUSIGN_SELECTION_CUTOFF_MS = "1786309440000"
+BUDDY_LEMONSLICE_AGENT_ID = "agent_9f9ee92bbcec14c3"
+BUDDY_VIDEO_VOICE_PROVIDER = "eila-runtime"
+BUDDY_VIDEO_VOICE_ID = "buddy"
+BUDDY_AVATAR_PROMPT = "Use friendly, attentive upper-body movement and natural hand gestures while speaking."
+
+# Required secret for the shared blackhole-video-worker:
+#   BLACKHOLE_CAPABILITY_TOKEN
 
 [[d1_databases]]
 binding = "DB"
