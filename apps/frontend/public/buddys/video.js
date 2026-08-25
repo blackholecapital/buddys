@@ -137,7 +137,10 @@
     }
   });
 
-  directButton.addEventListener("click", () => showVideo({ source:"direct" }));
+  directButton.addEventListener("click", () => {
+    showVideo({ source:"direct" });
+    connectButton.click();
+  });
   window.addEventListener("buddy:video-requested", (event) => {
     showVideo(event.detail || {});
     connectButton.click();
