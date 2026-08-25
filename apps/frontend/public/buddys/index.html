@@ -33,11 +33,14 @@
     <p class="buddy-contact-copy">Complete the form below and a local Buddy&#39;s representative will contact you shortly.</p>
     <div class="instant-video-card" aria-labelledby="instant-video-title">
       <div>
-        <p class="eyebrow">LIVE AI PERSONAL SHOPPER</p>
-        <h2 id="instant-video-title">Talk with Buddy now</h2>
-        <p>No form required. Start a live browser video conversation and let Buddy help narrow down what fits your home and budget.</p>
+        <p class="eyebrow">AI PERSONAL SHOPPER</p>
+        <h2 id="instant-video-title">Message or video chat with Buddy</h2>
+        <p>No form required. Start with private messaging, then connect on live video whenever you are ready.</p>
       </div>
-      <button type="button" id="instantVideoButton" class="video-cta">Start Live Video Chat</button>
+      <div class="instant-chat-actions">
+        <button type="button" id="instantMessageButton" class="message-cta">Message Buddy</button>
+        <button type="button" id="instantVideoButton" class="video-cta">Connect on Video</button>
+      </div>
     </div>
     <p class="security-notice"><strong>Your Information is Secure</strong><br><br>Never enter credit card or payment-source details on this form. To make a payment, use the official online payment link or call your store.</p>
   </section>
@@ -114,27 +117,54 @@
   </section>
 </main>
 
-<footer class="site-footer"><div><img src="./images/BHF_Logo.webp" alt="Buddy's Home Furnishings"><p class="buddy-service-line"><strong>Customer Service:</strong> <a href="tel:+18552989325">1-855-298-9325</a></p><p>8529 Southpark Circle, Suite 410<br>Orlando, FL 32819</p><p><a href="/buddys/privacy.html">Privacy Policy</a><span>•</span><a href="/buddys/terms.html">Terms &amp; Conditions</a></p></div></footer>
-
-<div id="buddyVideoModal" class="video-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="buddyVideoTitle">
+<footer class="site-footer"><div><img src="./images/BHF_Logo.webp" alt="Buddy's Home Furnishings"><p class="buddy-service-line"><strong>Customer Service:</strong> <a href="tel:+18552989325">1-855-298-9325</a></p><p>8529 Southpark Circle, Suite 410<br>Orlando, FL 32819</p><p><a <div id="buddyVideoModal" class="video-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="buddyVideoTitle">
   <div class="video-room">
     <div class="video-topbar">
-      <div><span class="live-dot" aria-hidden="true"></span><b id="buddyVideoTitle">Live with Buddy</b></div>
-      <button type="button" id="closeVideoButton" class="video-close" aria-label="Close video chat">&times;</button>
+      <div><span class="live-dot" aria-hidden="true"></span><b id="buddyVideoTitle">Buddy Personal Shopper</b></div>
+      <button type="button" id="closeVideoButton" class="video-close" aria-label="Close Buddy chat">&times;</button>
     </div>
-    <div id="buddyVideoMount" class="video-mount">
-      <div class="video-placeholder">
-        <img src="./images/buddy-avatar.jpg" alt="Buddy, your personal shopper">
-        <b id="buddyVideoStatus">Ready to connect</b>
-        <span>Private browser video room</span>
-      </div>
+
+    <div class="buddy-live-workspace">
+      <section class="video-stage" aria-label="Buddy live video">
+        <div id="buddyVideoMount" class="video-mount">
+          <div class="video-placeholder">
+            <img src="./images/buddy-avatar.jpg" alt="Buddy, your personal shopper">
+            <b id="buddyVideoStatus">Opening private message room…</b>
+            <span>Message now or connect on video when ready</span>
+          </div>
+        </div>
+        <div class="video-controls">
+          <button type="button" id="buddyMicButton" class="round-control" aria-label="Mute microphone" disabled>🎙</button>
+          <button type="button" id="buddyConnectButton" class="video-connect">Connect on Video</button>
+          <button type="button" id="buddyHangupButton" class="round-control danger" aria-label="End session">☎</button>
+        </div>
+        <p class="video-privacy">Your microphone stays off until you connect on video. Never share payment-card details here.</p>
+      </section>
+
+      <aside class="buddy-chat-panel" aria-label="Messages with Buddy">
+        <div class="buddy-chat-heading">
+          <div>
+            <span class="chat-online-dot" aria-hidden="true"></span>
+            <b>Messages with Buddy</b>
+          </div>
+          <span id="buddyChatState">Connecting…</span>
+        </div>
+        <div id="buddyChatStream" class="buddy-chat-stream" role="log" aria-live="polite">
+          <div class="buddy-bubble buddy">Hi, I’m Buddy. Tell me what you’re shopping for and I’ll help narrow it down.</div>
+        </div>
+        <section id="buddyResourcePanel" class="buddy-resource-panel hidden" aria-live="polite">
+          <div class="resource-heading">Shared with you</div>
+          <div id="buddyResourceList" class="buddy-resource-list"></div>
+        </section>
+        <form id="buddyChatForm" class="buddy-chat-form">
+          <label class="sr-only" for="buddyChatInput">Message Buddy</label>
+          <input id="buddyChatInput" type="text" maxlength="1200" autocomplete="off" placeholder="Ask about TVs, furniture, delivery…">
+          <button type="submit">Send</button>
+        </form>
+      </aside>
     </div>
-    <div class="video-controls">
-      <button type="button" id="buddyMicButton" class="round-control" aria-label="Mute microphone">🎙</button>
-      <button type="button" id="buddyConnectButton" class="video-connect">Start Video Chat</button>
-      <button type="button" id="buddyHangupButton" class="round-control danger" aria-label="End call">☎</button>
-    </div>
-    <p class="video-privacy">Microphone access is used only for this live conversation. Never share payment-card details in the video room.</p>
+  </div>
+</div>vacy">Microphone access is used only for this live conversation. Never share payment-card details in the video room.</p>
   </div>
 </div>
 

@@ -104,6 +104,8 @@ async function requestBuddyVideoSession(env,payload={}){
     "Help the customer choose among furniture, mattresses, appliances, computers, electronics, smartphones, and gaming products. Ask focused questions about room, size, features, style, budget, timing, and preferred store area.",
     "# Sales workflow",
     "If lead context is provided, acknowledge what the customer already requested instead of asking them to repeat it. When the customer settles on a demo product, confirm the exact selection. The existing Buddy workflow will later handle the agreement and delivery scheduling.",
+    "# Shared links",
+    "The browser has a shared-links panel beside the conversation. When a real product, DocuSign, scheduling, or store link is available, include the complete https URL in your reply so it appears there. Never invent a product, agreement, or scheduling URL. For store lookup you may share https://www.buddyrents.com/store-locator.",
     "# Guardrails",
     "Never request or accept card, bank, Social Security, or other payment-source data. Explain that this is a demonstration when exact inventory, pricing, financing approval, or store availability is not connected. Do not invent stock or approval decisions.",
     "# Voice",
