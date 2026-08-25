@@ -1,0 +1,69 @@
+# Cloudflare Module Worker configuration
+# API/webhook surface runs on edge. Background jobs run via Queue consumer.
+
+name = "blackhole-dashboard-worker"
+main = "worker-entry.mjs"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./frontend"
+binding = "ASSETS"
+run_worker_first = true
+not_found_handling = "single-page-application"
+
+[vars]
+APP_VERSION = "pass-6-edge"
+NODE_ENV = "production"
+LOG_LEVEL = "info"
+LOG_FORMAT = "json"
+DB_BACKEND = "d1"
+RUNTIME_TARGET = "edge"
+
+# --- Dashboard D1 Database ---
+[[d1_databases]]
+binding = "DB"
+database_name = "alley-concierge-db"
+database_id = "054a6113-0f95-4801-be09-78461cc32ec5"
+
+# Authoritative Buddy workflow/session state written by blackhole-concierge-worker.
+[[d1_databases]]
+binding = "BUDDY_DB"
+database_name = "blackhole-message-track-db"
+database_id = "4ae89ff5-fb34-446d-941f-d14c3e5db3f1"
+
+# --- Queues ---
+# Dashboard only produces follow-up jobs. The existing followup-jobs consumer is owned elsewhere.
+[[queues.producers]]
+queue = "followup-jobs"
+binding = "FOLLOWUP_QUEUE"
+
+# Voice/concierge communication telemetry, used for transcripts and activity history.
+[[queues.consumers]]
+queue = "blackhole-communication-events"
+max_batch_size = 20
+max_retries = 3
+
+# --- Development overrides ---
+[env.dev]
+name = "blackhole-dashboard-worker-dev"
+
+[env.dev.vars]
+APP_VERSION = "pass-6-edge-dev"
+NODE_ENV = "development"
+LOG_LEVEL = "debug"
+LOG_FORMAT = "text"
+DB_BACKEND = "memory"
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "followup-db"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+[[env.dev.queues.producers]]
+queue = "followup-jobs"
+binding = "FOLLOWUP_QUEUE"
+
+[[services]]
+binding = "CONCIERGE"
+service = "blackhole-concierge-worker"

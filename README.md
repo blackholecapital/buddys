@@ -1,3 +1,9 @@
-# Buddy's AI Personal Shopper
+# Alley Concierge Platform
 
-Dedicated Buddy's demo repository. Full application snapshot and video-personal-shopper integration are staged through pull requests.
+Reusable AI Concierge platform built on:
+
+- Alley AI
+- BlackHole Communications Platform
+- MessageTrack Dashboard
+
+This repository integrates existing applications without merging Git histories.

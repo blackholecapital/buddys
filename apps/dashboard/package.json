@@ -1,0 +1,36 @@
+{
+  "name": "sms-email-followup",
+  "version": "0.6.0",
+  "description": "SMS/Email follow-up automation system — dual runtime (Node + Cloudflare Workers)",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node scripts/dev/run-local.js",
+    "dev:edge": "npx wrangler dev",
+    "deploy:edge": "npx wrangler deploy",
+    "seed": "node scripts/seed/seed.js",
+    "test": "node tests/contracts.test.js && node tests/async-workflows.test.js && node tests/integration.test.js && node tests/security-auth.test.js",
+    "test:acceptance": "node tests/acceptance-sweep.js",
+    "test:security": "node tests/security-auth.test.js",
+    "test:contracts": "node tests/contracts.test.js",
+    "test:async": "node tests/async-workflows.test.js",
+    "test:integration": "node tests/integration.test.js",
+    "validate:bundle": "node scripts/validate-worker-bundle.js",
+    "worker:send": "node -e \"require('./worker/jobs/campaign-send').run().then(r => { console.log(JSON.stringify(r, null, 2)); process.exit(0); })\"",
+    "worker:followup": "node -e \"require('./worker/jobs/followup-check').run().then(r => { console.log(JSON.stringify(r, null, 2)); process.exit(0); })\"",
+    "health": "curl -s http://localhost:3000/api/health | node -e \"process.stdin.on('data',d=>console.log(JSON.parse(d)))\"",
+    "reconcile": "curl -s http://localhost:3000/api/reconciliation | node -e \"process.stdin.on('data',d=>console.log(JSON.parse(d)))\""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["sms", "email", "followup", "automation", "campaigns", "cloudflare-workers"],
+  "license": "UNLICENSED",
+  "private": true,
+  "optionalDependencies": {
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

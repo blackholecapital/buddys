@@ -1,0 +1,6 @@
+
+# Wrangler
+.wrangler/
+
+# Backup files
+*.bak

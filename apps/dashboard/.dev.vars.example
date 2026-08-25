@@ -1,0 +1,17 @@
+# ====================================================
+# .dev.vars — Cloudflare Worker local development secrets
+# ====================================================
+# Copy to .dev.vars and fill in values.
+# These are injected as env bindings when running `wrangler dev`.
+# Never commit .dev.vars to git — only this example file.
+
+# --- SMS Provider (Twilio) ---
+# Set providers.sms to "twilio" in settings to activate
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_FROM_NUMBER=
+
+# --- Email Provider (SendGrid) ---
+# Set providers.email to "sendgrid" in settings to activate
+SENDGRID_API_KEY=
+SENDGRID_FROM_EMAIL=

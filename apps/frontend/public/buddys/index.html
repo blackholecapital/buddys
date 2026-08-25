@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Contact Buddy's Home Furnishings</title>
+  <meta name="description" content="Contact Buddy's Home Furnishings about furniture, appliances, electronics, computers, financing, and store services.">
+  <link rel="stylesheet" href="./optin.css">
+</head>
+
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/buddys/" class="logo-link" aria-label="Buddy's Home Furnishings">
+      <img src="./images/BHF_Logo.webp" alt="Buddy's Home Furnishings">
+    </a>
+    <nav>
+      <a href="/buddys/">Home</a>
+      <a href="#contact-form">Contact Us</a>
+      <a href="/buddys/terms.html">Terms &amp; Conditions</a>
+      <a href="/buddys/privacy.html">Privacy Policy</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="contact-intro">
+    <h1 class="buddy-contact-title">Call Buddy&#39;s Home Furnishings</h1>
+    <div class="phone-lines"><p class="buddy-service-line"><strong>Customer Service:</strong> <a href="tel:+18552989325">1-855-298-9325</a></p></div>
+    <h2 class="buddy-store-title">Find a Store Near You</h2>
+    <p><a href="https://www.buddyrents.com/store-locator" target="_blank" style="display:inline-block;padding:10px 20px;background:#214b9f;color:#fff;font-weight:600;border-radius:6px;text-decoration:none;" class="cta-button buddy-store-button">Find My Store</a></p>
+    <h2 class="buddy-contact-choice">Prefer We Contact You?</h2>
+    <p class="buddy-contact-copy">Complete the form below and a local Buddy&#39;s representative will contact you shortly.</p>
+    <p class="security-notice"><strong>Your Information is Secure</strong><br><br>Never enter credit card or payment-source details on this form. To make a payment, use the official online payment link or call your store.</p>
+  </section>
+
+  <section class="lead-section" id="contact-form">
+    <form id="demoForm" class="lead-card" data-endpoint="/api/leads">
+      <div class="card-heading">
+        <p class="eyebrow">CONTACT BUDDY'S</p>
+        <h2>How can we help?</h2>
+        <p>Complete the form and a representative will follow up about your request.</p>
+      </div>
+
+      <div class="two-column">
+        <label>First Name <span>*</span><input name="first_name" autocomplete="given-name" required></label>
+        <label>Last Name <span>*</span><input name="last_name" autocomplete="family-name" required></label>
+      </div>
+      <div class="two-column">
+        <label>Email <span>*</span><input name="email" type="email" autocomplete="email" required></label>
+        <label>Phone <span>*</span><input name="phone" type="tel" autocomplete="tel" required></label>
+      </div>
+
+      <label>What are you interested in? <span>*</span>
+        <select name="product_interest" required>
+          <option value="">Select One</option><option>Living Room Furniture</option><option>Bedroom Furniture</option><option>Dining Room Furniture</option><option>Mattresses</option><option>Appliances</option><option>Computers</option><option>Electronics</option><option>Smartphones</option><option>Gaming</option><option>Financing Questions</option><option>Other</option>
+        </select>
+      </label>
+
+      <label>How did you hear about Buddy's? <span>*</span>
+        <select name="lead_source" required>
+          <option value="">Select One</option><option>I'm familiar with the brand</option><option>I was searching online</option><option>I received the flyer</option><option>Recommended by a friend</option><option>I received an email offer</option><option>I'm a current customer</option><option>Other</option>
+        </select>
+      </label>
+
+      <label>Select a State or Area <span>*</span>
+        <select name="preferred_store" required>
+          <option value="">Select One</option><option>Alabama</option><option>Arkansas</option><option>Arizona</option><option>Florida</option><option>Georgia</option><option>Guam</option><option>Illinois</option><option>Indiana</option><option>Kentucky</option><option>Louisiana</option><option>Mississippi</option><option>Nevada</option><option>North Carolina</option><option>Pennsylvania</option><option>South Carolina</option><option>Tennessee</option><option>Texas</option><option>Virginia</option><option>Washington</option>
+        </select>
+      </label>
+
+      <fieldset>
+        <legend>Preferred Contact Method <span>*</span></legend>
+        <div class="radio-row">
+          <label><input type="radio" name="contact_method" value="Phone" required> Phone</label>
+          <label><input type="radio" name="contact_method" value="Email"> Email</label>
+          <label><input type="radio" name="contact_method" value="Text"> Text</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Preferred Contact Time</legend>
+        <div class="radio-row">
+          <label><input type="radio" name="contact_time" value="Morning"> Morning</label>
+          <label><input type="radio" name="contact_time" value="Afternoon"> Afternoon</label>
+          <label><input type="radio" name="contact_time" value="Evening"> Evening</label>
+        </div>
+      </fieldset>
+
+      <label>Comments<textarea name="comments" rows="4" placeholder="Tell us what you are looking for. Please do not include payment information."></textarea></label>
+
+      <div class="consent-box">
+        <label class="consent-label">
+          <input type="checkbox" name="consent" id="smsConsent">
+          <span>I agree to receive optional transactional text messages concerning this inquiry, appointments, or requested services. Consent is not a condition of purchase. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for assistance.</span>
+        </label>
+        <p><a href="/buddys/privacy.html">Privacy Policy</a><span aria-hidden="true">•</span><a href="/buddys/terms.html">Terms &amp; Conditions</a></p>
+      </div>
+
+      <input type="hidden" name="owner" value="Buddy Web Lead">
+      <input type="hidden" name="company" value="Buddy's Home Furnishings">
+      <button type="submit" id="submitButton">Request Information</button>
+      <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+</main>
+
+<footer class="site-footer"><div><img src="./images/BHF_Logo.webp" alt="Buddy's Home Furnishings"><p class="buddy-service-line"><strong>Customer Service:</strong> <a href="tel:+18552989325">1-855-298-9325</a></p><p>8529 Southpark Circle, Suite 410<br>Orlando, FL 32819</p><p><a href="/buddys/privacy.html">Privacy Policy</a><span>•</span><a href="/buddys/terms.html">Terms &amp; Conditions</a></p></div></footer>
+
+<script>
+(() => {
+  const form = document.getElementById("demoForm");
+  const button = document.getElementById("submitButton");
+  const status = document.getElementById("formStatus");
+  const smsConsent = document.getElementById("smsConsent");
+  const methodInputs = [...form.querySelectorAll('input[name="contact_method"]')];
+
+  function syncConsentRequirement() {
+    const method = methodInputs.find((input) => input.checked)?.value || "";
+    smsConsent.required = method === "Text";
+  }
+  methodInputs.forEach((input) => input.addEventListener("change", syncConsentRequirement));
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    syncConsentRequirement();
+    if (!form.reportValidity()) return;
+
+    button.disabled = true;
+    button.textContent = "Sending...";
+    status.className = "form-status";
+    status.textContent = "";
+
+    const data = Object.fromEntries(new FormData(form).entries());
+    const requestedContactMethod = data.contact_method || "";
+    data.name = `${data.first_name || ""} ${data.last_name || ""}`.trim();
+    data.notes = [
+      `Product interest: ${data.product_interest || "Not provided"}`,
+      `Lead source: ${data.lead_source || "Not provided"}`,
+      `Preferred state/area: ${data.preferred_store || "Not provided"}`,
+      `Preferred contact method: ${data.contact_method || "Not provided"}`,
+      `Preferred contact time: ${data.contact_time || "Not provided"}`,
+      `Comments: ${data.comments || "None"}`
+    ].join("\n");
+    data.consent = smsConsent.checked;
+
+    try {
+      const response = await fetch(form.dataset.endpoint, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Accept":"application/json" },
+        body:JSON.stringify(data)
+      });
+      const text = await response.text();
+      let result = {};
+      try { result = text ? JSON.parse(text) : {}; } catch { result = { message:text }; }
+      if (!response.ok) throw new Error(typeof (result.error ?? result.message) === "string" ? (result.error ?? result.message) : JSON.stringify(result.error ?? result.message ?? result));
+
+      const smsOk = Boolean(result?.concierge?.results?.sms?.ok);
+      form.reset();
+      syncConsentRequirement();
+      status.className = "form-status success";
+
+      if (requestedContactMethod === "Phone") {
+        status.textContent = smsOk
+          ? "Thanks. Buddy texted you and will call in about 15 seconds."
+          : "Thanks. Buddy received your phone request and will call shortly.";
+      } else if (requestedContactMethod === "Text") {
+        status.textContent = smsOk
+          ? "Thanks. Check your phone for Buddy's text. Reply YES or CALL if you'd like him to call you."
+          : "Thanks. Your request was received, but the text could not be confirmed. Please try again.";
+      } else {
+        status.textContent = "Thanks. Your request was received. Please check your email for confirmation.";
+      }
+    } catch (error) {
+      console.error("Lead submission failed:", error);
+      status.className = "form-status error";
+      status.textContent = error instanceof Error ? error.message : String(error);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Request Information";
+    }
+  });
+})();
+</script>
+</body>
+</html>

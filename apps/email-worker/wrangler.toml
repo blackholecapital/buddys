@@ -1,0 +1,8 @@
+name = "blackhole-email-worker"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[[queues.producers]]
+binding = "EVENTS"
+queue = "blackhole-communication-events"
