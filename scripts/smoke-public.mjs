@@ -1,13 +1,13 @@
 const checks = [
   {
     name:"Buddy customer page",
-    url:"https://buddys.pages.dev/buddys/",
+    url:"https://buddys-4nm.pages.dev/buddys/",
     status:200,
     body:/Start Live Video Chat/,
   },
   {
     name:"Buddy avatar asset",
-    url:"https://buddys.pages.dev/buddys/images/buddy-avatar.jpg",
+    url:"https://buddys-4nm.pages.dev/buddys/images/buddy-avatar.jpg",
     status:200,
     contentType:/^image\//,
   },
@@ -80,5 +80,5 @@ if (failures) {
   console.error(`\nBuddy public readiness: ${failures} check${failures === 1 ? "" : "s"} failed.`);
   process.exitCode = 1;
 } else {
-  console.log("\nBuddy public readiness: GREEN. Open https://buddys.pages.dev/buddys/ and test both video entry paths.");
+  console.log("\nBuddy public readiness: GREEN. Open https://buddys-4nm.pages.dev/buddys/ and test both video entry paths.");
 }
