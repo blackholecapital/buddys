@@ -2,9 +2,13 @@ const contacts = require("../../../layers/domain/contacts");
 const activity = require("../../../layers/domain/activity");
 const { readDb } = require("../../../layers/core/db");
 const { conciergePost } = require("../../../../shared/services/concierge");
+const rateLimits = require("../../../layers/domain/rateLimits");
 
 module.exports = async function handler({ method, body, env }) {
   if (method !== "POST") return { ok:false, error:"POST only" };
+
+  const guard = rateLimits.checkAndTrack("buddy-video");
+  if (!guard.allowed) return { ok:false, error:`Video demo limit reached. ${guard.reason}. Please try again shortly.` };
 
   const contactId = String(body?.contactId || "").trim();
   const contact = contactId
