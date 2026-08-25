@@ -31,6 +31,14 @@
     <p><a href="https://www.buddyrents.com/store-locator" target="_blank" style="display:inline-block;padding:10px 20px;background:#214b9f;color:#fff;font-weight:600;border-radius:6px;text-decoration:none;" class="cta-button buddy-store-button">Find My Store</a></p>
     <h2 class="buddy-contact-choice">Prefer We Contact You?</h2>
     <p class="buddy-contact-copy">Complete the form below and a local Buddy&#39;s representative will contact you shortly.</p>
+    <div class="instant-video-card" aria-labelledby="instant-video-title">
+      <div>
+        <p class="eyebrow">LIVE AI PERSONAL SHOPPER</p>
+        <h2 id="instant-video-title">Talk with Buddy now</h2>
+        <p>No form required. Start a live browser video conversation and let Buddy help narrow down what fits your home and budget.</p>
+      </div>
+      <button type="button" id="instantVideoButton" class="video-cta">Start Live Video Chat</button>
+    </div>
     <p class="security-notice"><strong>Your Information is Secure</strong><br><br>Never enter credit card or payment-source details on this form. To make a payment, use the official online payment link or call your store.</p>
   </section>
 
@@ -75,6 +83,7 @@
           <label><input type="radio" name="contact_method" value="Phone" required> Phone</label>
           <label><input type="radio" name="contact_method" value="Email"> Email</label>
           <label><input type="radio" name="contact_method" value="Text"> Text</label>
+          <label><input type="radio" name="contact_method" value="Video"> Live Video</label>
         </div>
       </fieldset>
 
@@ -107,6 +116,28 @@
 
 <footer class="site-footer"><div><img src="./images/BHF_Logo.webp" alt="Buddy's Home Furnishings"><p class="buddy-service-line"><strong>Customer Service:</strong> <a href="tel:+18552989325">1-855-298-9325</a></p><p>8529 Southpark Circle, Suite 410<br>Orlando, FL 32819</p><p><a href="/buddys/privacy.html">Privacy Policy</a><span>•</span><a href="/buddys/terms.html">Terms &amp; Conditions</a></p></div></footer>
 
+<div id="buddyVideoModal" class="video-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="buddyVideoTitle">
+  <div class="video-room">
+    <div class="video-topbar">
+      <div><span class="live-dot" aria-hidden="true"></span><b id="buddyVideoTitle">Live with Buddy</b></div>
+      <button type="button" id="closeVideoButton" class="video-close" aria-label="Close video chat">&times;</button>
+    </div>
+    <div id="buddyVideoMount" class="video-mount">
+      <div class="video-placeholder">
+        <img src="./images/BHF_Logo.webp" alt="" aria-hidden="true">
+        <b id="buddyVideoStatus">Ready to connect</b>
+        <span>Private browser video room</span>
+      </div>
+    </div>
+    <div class="video-controls">
+      <button type="button" id="buddyMicButton" class="round-control" aria-label="Mute microphone">🎙</button>
+      <button type="button" id="buddyConnectButton" class="video-connect">Start Video Chat</button>
+      <button type="button" id="buddyHangupButton" class="round-control danger" aria-label="End call">☎</button>
+    </div>
+    <p class="video-privacy">Microphone access is used only for this live conversation. Never share payment-card details in the video room.</p>
+  </div>
+</div>
+
 <script>
 (() => {
   const form = document.getElementById("demoForm");
@@ -119,7 +150,14 @@
     const method = methodInputs.find((input) => input.checked)?.value || "";
     smsConsent.required = method === "Text";
   }
-  methodInputs.forEach((input) => input.addEventListener("change", syncConsentRequirement));
+  function syncSubmitLabel() {
+    const method = methodInputs.find((input) => input.checked)?.value || "";
+    if (!button.disabled) button.textContent = method === "Video" ? "Submit & Start Video Chat" : "Request Information";
+  }
+  methodInputs.forEach((input) => input.addEventListener("change", () => {
+    syncConsentRequirement();
+    syncSubmitLabel();
+  }));
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -160,7 +198,21 @@
       syncConsentRequirement();
       status.className = "form-status success";
 
-      if (requestedContactMethod === "Phone") {
+      if (requestedContactMethod === "Video") {
+        status.textContent = "Thanks. Your preferences are saved and Buddy's live video room is opening now.";
+        window.dispatchEvent(new CustomEvent("buddy:video-requested", {
+          detail: {
+            contactId: result?.contact?.id || "",
+            firstName: data.first_name || "",
+            lastName: data.last_name || "",
+            interest: data.product_interest || "",
+            location: data.preferred_store || "",
+            comments: data.comments || "",
+            leadScore: result?.leadScore || 0,
+            source: "lead-form"
+          }
+        }));
+      } else if (requestedContactMethod === "Phone") {
         status.textContent = smsOk
           ? "Thanks. Buddy texted you and will call in about 15 seconds."
           : "Thanks. Buddy received your phone request and will call shortly.";
@@ -177,10 +229,12 @@
       status.textContent = error instanceof Error ? error.message : String(error);
     } finally {
       button.disabled = false;
-      button.textContent = "Request Information";
+      syncSubmitLabel();
     }
   });
 })();
 </script>
+<script src="https://unpkg.com/livekit-client@2.18.0/dist/livekit-client.umd.js"></script>
+<script src="./video.js"></script>
 </body>
 </html>
