@@ -1,0 +1,138 @@
+/* Mobile navigation + portrait usability for Buddy Personal Shopper Operations */
+@media (max-width: 760px) {
+  .buddy-app {
+    display: block !important;
+    min-height: 100dvh;
+    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+
+  .workspace { min-width: 0; width: 100%; }
+
+  .side-nav {
+    display: block !important;
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    top: auto;
+    z-index: 1000;
+    padding: 7px !important;
+    border-radius: 18px;
+    background: rgba(11,18,32,.96);
+    box-shadow: 0 12px 36px rgba(15,23,42,.30);
+    backdrop-filter: blur(14px);
+  }
+
+  .side-nav .brand,
+  .side-nav .side-status { display: none !important; }
+
+  .side-nav nav {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 5px !important;
+  }
+
+  .side-nav .nav-item {
+    min-width: 0;
+    min-height: 52px;
+    padding: 6px 3px !important;
+    margin: 0 !important;
+    border-radius: 12px;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center !important;
+    align-items: center;
+    gap: 3px !important;
+    font-size: 9px !important;
+    line-height: 1.1;
+    color: #c9d3e5;
+    white-space: nowrap;
+  }
+
+  .side-nav .nav-item svg { width: 18px; height: 18px; }
+  .side-nav .nav-item.active { background: #18356f; color: #fff; }
+
+  .topbar {
+    padding: 16px 18px 13px !important;
+    align-items: flex-start !important;
+  }
+  .topbar h1 { font-size: 25px !important; line-height: 1.08; }
+  .topbar p { font-size: 13px; line-height: 1.35; }
+  .eyebrow { font-size: 9px; }
+  .top-actions { display: none !important; }
+
+  .kpis {
+    padding: 12px 14px !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 9px !important;
+  }
+  .kpi { min-width: 0; padding: 12px !important; }
+  .kpi strong { font-size: 22px !important; }
+  .kpi-icon { width: 34px; height: 34px; }
+  .kpis .kpi:last-child { grid-column: 1 / -1; }
+
+  .tabbar {
+    margin: 0 12px !important;
+    padding: 0 8px !important;
+    gap: 5px !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabbar::-webkit-scrollbar { display:none; }
+  .tab {
+    flex: 0 0 auto;
+    padding: 13px 8px 10px !important;
+    font-size: 12px;
+  }
+
+  .content-shell {
+    margin: 0 12px 18px !important;
+    display: block !important;
+    min-height: 0 !important;
+  }
+  .content-main { padding: 10px !important; }
+  .detail-panel { display: none !important; }
+
+  .pipeline {
+    display: flex !important;
+    min-width: 0 !important;
+    width: 100%;
+    overflow-x: auto;
+    gap: 10px !important;
+    padding-bottom: 8px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pipeline .stage {
+    flex: 0 0 min(82vw, 310px);
+    scroll-snap-align: start;
+  }
+
+  .lead-grid { grid-template-columns: 1fr !important; }
+  .lead-card { touch-action: manipulation; }
+  .lead-actions { justify-content: space-between; gap: 5px !important; }
+  .lead-actions button { width: 34px !important; height: 34px !important; }
+
+  .delivery-layout { grid-template-columns: 1fr !important; }
+  .calendar-card { overflow-x: auto; }
+  .calendar-grid { min-width: 620px; }
+  .delivery-side { margin-top: 10px; }
+
+  .doc-table { grid-template-columns: 1.2fr .9fr !important; padding: 11px 10px !important; }
+  .doc-table.head span:nth-child(2),
+  .doc-table.head span:nth-child(3),
+  .doc-table.head span:nth-child(5),
+  .doc-table:not(.head) > span:nth-child(2),
+  .doc-table:not(.head) > span:nth-child(3) { display:none !important; }
+  .doc-table:not(.head) > span:nth-child(5) { display:block !important; }
+
+  .table-title { padding: 13px !important; }
+  .table-title h2 { font-size: 16px !important; }
+
+  /* Conversation view becomes a vertical call list + transcript in portrait. */
+  .workspace > div[style*="grid-template-columns: 340px"] {
+    grid-template-columns: 1fr !important;
+    padding: 0 12px 18px !important;
+  }
+}

@@ -1,0 +1,7 @@
+name = "alley-concierge"
+
+pages_build_output_dir = "dist"
+
+[[services]]
+binding = "DASHBOARD"
+service = "blackhole-dashboard-worker"

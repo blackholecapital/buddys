@@ -1,0 +1,48 @@
+body{
+    margin:0;
+    background:#f5f7fb;
+    color:#222;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+.site-header{
+    background:#24479A;
+    padding:18px 40px;
+}
+
+.site-header img{
+    height:60px;
+}
+
+main{
+    max-width:1000px;
+    margin:40px auto;
+    background:white;
+    padding:50px;
+    border-radius:8px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+h1{
+    color:#24479A;
+    font-size:42px;
+    margin-bottom:30px;
+}
+
+h2{
+    color:#24479A;
+    margin-top:35px;
+}
+
+p,li{
+    color:#333;
+    line-height:1.7;
+}
+
+a{
+    color:#24479A;
+}
+
+ul{
+    padding-left:24px;
+}
