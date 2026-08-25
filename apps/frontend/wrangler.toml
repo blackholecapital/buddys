@@ -1,7 +1,8 @@
-name = "alley-concierge"
+name = "buddys"
+compatibility_date = "2026-08-25"
 
 pages_build_output_dir = "dist"
 
 [[services]]
 binding = "DASHBOARD"
-service = "blackhole-dashboard-worker"
+service = "buddys-dashboard-worker"

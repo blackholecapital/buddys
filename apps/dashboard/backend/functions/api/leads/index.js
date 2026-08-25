@@ -34,7 +34,7 @@ async function buildCallNowUrl(env, contactId) {
   );
   const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`buddy-call:${contactId}`));
   const sig = base64Url(new Uint8Array(signature));
-  const base = String(env.DASHBOARD_PUBLIC_URL || "https://blackhole-dashboard-worker.cryptocapitalgroupfl.workers.dev").replace(/\/$/, "");
+  const base = String(env.DASHBOARD_PUBLIC_URL || "https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev").replace(/\/$/, "");
   return `${base}/api/call-now?id=${encodeURIComponent(contactId)}&sig=${encodeURIComponent(sig)}`;
 }
 

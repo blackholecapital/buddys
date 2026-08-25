@@ -152,7 +152,7 @@ export function docusignConfigured(env) {
 export function docusignConsentUrl(env) {
   const clientId = String(env.DOCUSIGN_INTEGRATION_KEY || "");
   const redirectUri = String(
-    env.DOCUSIGN_CONSENT_REDIRECT_URI || env.PUBLIC_BASE_URL || "https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev"
+    env.DOCUSIGN_CONSENT_REDIRECT_URI || env.PUBLIC_BASE_URL || "https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev"
   ).replace(/\/$/, "") + "/docusign/consent-complete";
 
   const qs = new URLSearchParams({
@@ -265,7 +265,7 @@ export async function createBuddySigningSession(env, {
   const clientUserId = `buddy-${contactId || contact.id || Date.now()}`;
   const agreementId = `BUDDY-DEMO-${Date.now()}`;
   const publicBase = String(
-    env.PUBLIC_BASE_URL || "https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev"
+    env.PUBLIC_BASE_URL || "https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev"
   ).replace(/\/$/, "");
   const connectUrl = `${publicBase}/docusign/connect?contactId=${encodeURIComponent(contactId || contact.id || "")}`;
 

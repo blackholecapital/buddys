@@ -1,14 +1,16 @@
-name = "blackhole-concierge-worker"
+name = "buddys-concierge-worker"
 main = "src/index.js"
-compatibility_date = "2026-07-28"
+compatibility_date = "2026-08-25"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-PUBLIC_BASE_URL = "https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev"
-DASHBOARD_URL = "https://blackhole-dashboard-worker.cryptocapitalgroupfl.workers.dev"
+PUBLIC_BASE_URL = "https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev"
+DASHBOARD_URL = "https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev"
 DOCUSIGN_BASE_PATH = "https://demo.docusign.net/restapi"
-DOCUSIGN_RETURN_URL = "https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev"
+DOCUSIGN_RETURN_URL = "https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev"
 DOCUSIGN_SELECTION_CUTOFF_MS = "1786309440000"
+BUDDY_LIVE_SOURCE = "image-url"
+BUDDY_AVATAR_IMAGE_URL = "https://buddys.pages.dev/buddys/images/buddy-avatar.jpg"
 BUDDY_LEMONSLICE_AGENT_ID = "agent_9f9ee92bbcec14c3"
 BUDDY_VIDEO_VOICE_PROVIDER = "eila-runtime"
 BUDDY_VIDEO_VOICE_ID = "buddy"
@@ -19,20 +21,20 @@ BUDDY_AVATAR_PROMPT = "Use friendly, attentive upper-body movement and natural h
 
 [[d1_databases]]
 binding = "DB"
-database_name = "blackhole-message-track-db"
-database_id = "4ae89ff5-fb34-446d-941f-d14c3e5db3f1"
+database_name = "buddys-message-track-db"
+database_id = "__BUDDYS_MESSAGE_TRACK_DB_ID__"
 
 [[services]]
 binding = "SMS"
-service = "blackhole-sms-worker"
+service = "buddys-sms-worker"
 
 [[services]]
 binding = "EMAIL"
-service = "blackhole-email-worker"
+service = "buddys-email-worker"
 
 [[services]]
 binding = "VOICE"
-service = "blackhole-voice-worker"
+service = "buddys-voice-worker"
 
 [[services]]
 binding = "VIDEO"
@@ -40,8 +42,15 @@ service = "blackhole-video-worker"
 
 [[queues.producers]]
 binding = "EVENTS"
-queue = "blackhole-communication-events"
+queue = "buddys-communication-events"
 
 [[analytics_engine_datasets]]
 binding = "ANALYTICS"
-dataset = "blackhole_message_events"
+dataset = "buddys_message_events"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[secrets]
+required = ["INTERNAL_CALL_SECRET", "BLACKHOLE_CAPABILITY_TOKEN"]

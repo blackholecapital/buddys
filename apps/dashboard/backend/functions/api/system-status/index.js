@@ -12,7 +12,7 @@ module.exports = async ({ env }) => {
 
     concierge = {
       ok: false,
-      service: "blackhole-concierge-worker",
+      service: "buddys-concierge-worker",
       health: "offline",
       error: String(err.message || err),
     };

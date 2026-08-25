@@ -1,14 +1,18 @@
-name = "blackhole-sms-worker"
+name = "buddys-sms-worker"
 main = "src/index.js"
-compatibility_date = "2026-08-10"
+compatibility_date = "2026-08-25"
 compatibility_flags = ["nodejs_compat"]
 
 [[queues.producers]]
 binding = "EVENTS"
-queue = "blackhole-communication-events"
+queue = "buddys-communication-events"
 
 [observability]
 enabled = true
+head_sampling_rate = 1
 
 [observability.logs]
 enabled = true
+
+[secrets]
+required = ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER"]

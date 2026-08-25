@@ -1,9 +1,9 @@
 # Cloudflare Module Worker configuration
 # API/webhook surface runs on edge. Background jobs run via Queue consumer.
 
-name = "blackhole-dashboard-worker"
+name = "buddys-dashboard-worker"
 main = "worker-entry.mjs"
-compatibility_date = "2024-09-23"
+compatibility_date = "2026-08-25"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
@@ -23,30 +23,30 @@ RUNTIME_TARGET = "edge"
 # --- Dashboard D1 Database ---
 [[d1_databases]]
 binding = "DB"
-database_name = "alley-concierge-db"
-database_id = "054a6113-0f95-4801-be09-78461cc32ec5"
+database_name = "buddys-dashboard-db"
+database_id = "__BUDDYS_DASHBOARD_DB_ID__"
 
-# Authoritative Buddy workflow/session state written by blackhole-concierge-worker.
+# Authoritative Buddy workflow/session state written by buddys-concierge-worker.
 [[d1_databases]]
 binding = "BUDDY_DB"
-database_name = "blackhole-message-track-db"
-database_id = "4ae89ff5-fb34-446d-941f-d14c3e5db3f1"
+database_name = "buddys-message-track-db"
+database_id = "__BUDDYS_MESSAGE_TRACK_DB_ID__"
 
 # --- Queues ---
-# Dashboard only produces follow-up jobs. The existing followup-jobs consumer is owned elsewhere.
+# Dashboard produces Buddy-specific follow-up jobs.
 [[queues.producers]]
-queue = "followup-jobs"
+queue = "buddys-followup-jobs"
 binding = "FOLLOWUP_QUEUE"
 
 # Voice/concierge communication telemetry, used for transcripts and activity history.
 [[queues.consumers]]
-queue = "blackhole-communication-events"
+queue = "buddys-communication-events"
 max_batch_size = 20
 max_retries = 3
 
 # --- Development overrides ---
 [env.dev]
-name = "blackhole-dashboard-worker-dev"
+name = "buddys-dashboard-worker-dev"
 
 [env.dev.vars]
 APP_VERSION = "pass-6-edge-dev"
@@ -55,15 +55,17 @@ LOG_LEVEL = "debug"
 LOG_FORMAT = "text"
 DB_BACKEND = "memory"
 
-[[env.dev.d1_databases]]
-binding = "DB"
-database_name = "followup-db"
-database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-
 [[env.dev.queues.producers]]
-queue = "followup-jobs"
+queue = "buddys-followup-jobs"
 binding = "FOLLOWUP_QUEUE"
 
 [[services]]
 binding = "CONCIERGE"
-service = "blackhole-concierge-worker"
+service = "buddys-concierge-worker"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[secrets]
+required = ["INTERNAL_CALL_SECRET"]

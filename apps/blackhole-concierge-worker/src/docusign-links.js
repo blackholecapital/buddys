@@ -28,7 +28,7 @@ export async function createSigningShortLink(env, { targetUrl, contactId = "", e
     INSERT INTO buddy_docusign_links (token, target_url, contact_id, envelope_id, created_at)
     VALUES (?, ?, ?, ?, ?)
   `).bind(token, String(targetUrl), String(contactId), String(envelopeId), Date.now()).run();
-  const base = String(env.PUBLIC_BASE_URL || "https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev").replace(/\/$/, "");
+  const base = String(env.PUBLIC_BASE_URL || "https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev").replace(/\/$/, "");
   return `${base}/docusign/sign/${token}`;
 }
 

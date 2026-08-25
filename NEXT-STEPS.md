@@ -12,13 +12,18 @@
 - [x] Default video voice provider to `eila-runtime`
 - [x] Add server-side demo rate guard
 
-## Pass 2 — infrastructure isolation and deployment
+## Pass 2 — infrastructure isolation and deployment (in progress)
 
-- [ ] Provision Buddy-specific Cloudflare Worker names
-- [ ] Provision Buddy-specific D1, Queue, and Analytics Engine resources
-- [ ] Bind Buddy dashboard → concierge → video services
+- [x] Declare Buddy-specific Cloudflare Worker names
+- [x] Declare Buddy-specific D1, Queue, and Analytics Engine resources
+- [x] Bind Buddy dashboard → concierge → shared video service
+- [x] Mirror AI Fans with a LemonSlice `image-url` avatar source
+- [x] Point the phone voice worker at `https://alley-voice.xyz-labs.xyz`
+- [x] Route browser video to LiveKit agent `lemonslice` with `eila-runtime:buddy`
+- [ ] Authenticate Wrangler and provision the declared Cloudflare resources
 - [ ] Set matching `INTERNAL_CALL_SECRET` and `BLACKHOLE_CAPABILITY_TOKEN`
-- [ ] Point the video worker at the RX 6800 Buddy runtime profile
+- [ ] Set `LEMONSLICE_BUDDYS_API_KEY` on the shared Alley AI relay
+- [ ] Start/confirm the RX 6800 LiveKit `lemonslice` worker registration
 - [ ] Deploy concierge, dashboard, and frontend in that order
 - [ ] Run both entry-path smoke tests from the public Buddy page
 

@@ -24,7 +24,7 @@
 
   function renderPlaceholder(message) {
     mount.innerHTML = `<div class="video-placeholder">
-      <img src="./images/BHF_Logo.webp" alt="" aria-hidden="true">
+      <img src="./images/buddy-avatar.jpg" alt="Buddy, your personal shopper">
       <b id="buddyVideoStatus"></b>
       <span>Private browser video room</span>
     </div>`;

@@ -91,6 +91,12 @@ async function requestBuddyVideoSession(env,payload={}){
   const contactId=String(payload.contactId||payload.contact?.id||"").trim();
   const contact=contactId?await resolveContact(env,contactId,payload):mergeContact(payload.contact||{},payload.context||{});
   const directSessionId=crypto.randomUUID();
+  const avatarSource=String(env.BUDDY_LIVE_SOURCE||"image-url").trim().toLowerCase();
+  if(!["agent-id","image-url"].includes(avatarSource))throw new Error("BUDDY_LIVE_SOURCE must be agent-id or image-url");
+  const lemonsliceAgentId=String(env.BUDDY_LEMONSLICE_AGENT_ID||"").trim();
+  const avatarImageUrl=String(env.BUDDY_AVATAR_IMAGE_URL||"").trim();
+  if(avatarSource==="agent-id"&&!lemonsliceAgentId)throw new Error("BUDDY_LEMONSLICE_AGENT_ID is required for agent-id sessions");
+  if(avatarSource==="image-url"&&!avatarImageUrl)throw new Error("BUDDY_AVATAR_IMAGE_URL is required for image-url sessions");
   const instructions=[
     "# Identity",
     "You are Buddy, the friendly AI personal shopper for Buddy's Home Furnishings.",
@@ -119,9 +125,9 @@ async function requestBuddyVideoSession(env,payload={}){
       fanId:contactId||directSessionId,
       fanName:[contact.firstName||payload.firstName||"Buddy customer",contact.lastName||payload.lastName||""].filter(Boolean).join(" "),
       avatarProvider:"lemonslice",
-      avatarSource:"agent-id",
-      lemonsliceAgentId:String(env.BUDDY_LEMONSLICE_AGENT_ID||"agent_9f9ee92bbcec14c3").trim(),
-      avatarImageUrl:"",
+      avatarSource,
+      lemonsliceAgentId:avatarSource==="agent-id"?lemonsliceAgentId:"",
+      avatarImageUrl:avatarSource==="image-url"?avatarImageUrl:"",
       avatarPrompt:String(env.BUDDY_AVATAR_PROMPT||"Use friendly, attentive upper-body movement and natural hand gestures while speaking.").trim(),
       voiceProvider:String(env.BUDDY_VIDEO_VOICE_PROVIDER||"eila-runtime").trim(),
       voiceModel:String(env.BUDDY_VIDEO_VOICE_MODEL||"").trim(),
@@ -168,7 +174,7 @@ async function scheduleDelivery(env,payload={}){
 
 export default { async fetch(request,env,ctx){
   const url=new URL(request.url);
-  if(url.pathname==="/api/health")return Response.json({ok:true,service:"blackhole-concierge-worker",health:"online",runtime:"edge",docusign:docusignConfigured(env)?"configured":"not-configured",googleCalendar:googleCalendarConfigured(env)?"configured":"not-configured",googleCalendarTimeZone:googleCalendarTimeZone(env)});
+  if(url.pathname==="/api/health")return Response.json({ok:true,service:"buddys-concierge-worker",health:"online",runtime:"edge",docusign:docusignConfigured(env)?"configured":"not-configured",googleCalendar:googleCalendarConfigured(env)?"configured":"not-configured",googleCalendarTimeZone:googleCalendarTimeZone(env)});
   if(url.pathname==="/docusign/consent-complete")return new Response("DocuSign consent granted. You can close this tab and return to Buddy.",{status:200,headers:{"Content-Type":"text/plain; charset=utf-8"}});
   if(url.pathname.startsWith("/docusign/sign/")&&request.method==="GET"){const token=decodeURIComponent(url.pathname.slice("/docusign/sign/".length));const row=await resolveSigningShortLink(env,token).catch(()=>null);if(!row?.target_url)return new Response("This signing link is unavailable.",{status:404});return Response.redirect(String(row.target_url),302);}
   if(url.pathname.startsWith("/docusign/document/")&&request.method==="GET"){
