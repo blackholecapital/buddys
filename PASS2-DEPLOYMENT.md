@@ -1,0 +1,98 @@
+# Buddy's Pass 2 deployment
+
+The repository no longer points at Alley Concierge's Worker, D1, Queue, or Analytics Engine names. Run these steps from an authenticated Cloudflare environment.
+
+## 1. Provision isolated data resources
+
+```bash
+node scripts/provision-cloudflare.mjs
+```
+
+This creates or reuses:
+
+- D1: `buddys-dashboard-db`, `buddys-message-track-db`
+- Queues: `buddys-followup-jobs`, `buddys-communication-events`
+- Analytics Engine datasets: `buddys_message_events`, `buddys_voice_events` (created automatically on first write)
+
+The script replaces the D1 ID markers in both Wrangler configs.
+
+Before provisioning or deploying, the image-avatar contract can be checked without external services:
+
+```bash
+node scripts/test-video-config.mjs
+```
+
+## 2. Bootstrap Worker names
+
+Cloudflare requires service-binding targets to exist before their callers deploy. The Buddy voice and concierge Workers call each other, so create harmless stubs first:
+
+```bash
+node scripts/bootstrap-workers.mjs
+```
+
+## 3. Set secrets
+
+Use the same `INTERNAL_CALL_SECRET` value for dashboard, concierge, and voice. Use the same `BLACKHOLE_CAPABILITY_TOKEN` value already configured on `blackhole-video-worker`.
+
+```bash
+cd apps/dashboard
+npx wrangler@latest secret put INTERNAL_CALL_SECRET
+
+cd ../blackhole-concierge-worker
+npx wrangler@latest secret put INTERNAL_CALL_SECRET
+npx wrangler@latest secret put BLACKHOLE_CAPABILITY_TOKEN
+
+cd ../voice-worker
+npx wrangler@latest secret put INTERNAL_CALL_SECRET
+npx wrangler@latest secret put TWILIO_ACCOUNT_SID
+npx wrangler@latest secret put TWILIO_AUTH_TOKEN
+npx wrangler@latest secret put TWILIO_PHONE_NUMBER
+npx wrangler@latest secret put DEEPGRAM_API_KEY
+npx wrangler@latest secret put BUDDY_RUNTIME_TOKEN
+
+cd ../sms-worker
+npx wrangler@latest secret put TWILIO_ACCOUNT_SID
+npx wrangler@latest secret put TWILIO_AUTH_TOKEN
+npx wrangler@latest secret put TWILIO_PHONE_NUMBER
+
+cd ../email-worker
+npx wrangler@latest secret put RESEND_API_KEY
+```
+
+Also set `LEMONSLICE_BUDDYS_API_KEY` on the shared `alley-ai` Cloudflare Worker after the companion Alley AI runtime PR is merged. This mirrors the proven AI Fans tenant-specific relay and avoids reusing a stale provider key.
+
+DocuSign and Google Calendar secrets remain optional for the first video smoke test. Set the existing DocuSign/Google values on `buddys-concierge-worker` before testing the complete purchase flow.
+
+## 4. Deploy
+
+```bash
+cd apps/sms-worker && npx wrangler@latest deploy
+cd ../email-worker && npx wrangler@latest deploy
+cd ../voice-worker && npx wrangler@latest deploy
+cd ../blackhole-concierge-worker && npx wrangler@latest deploy
+cd ../dashboard && npx wrangler@latest deploy
+
+cd ../frontend
+npm ci
+npm run build
+npx wrangler@latest pages project create buddys --production-branch main
+npx wrangler@latest pages deploy dist --project-name buddys --branch main
+```
+
+If the Pages project already exists, skip `pages project create`.
+
+## 5. Runtime and smoke checks
+
+The phone voice Worker now targets `https://alley-voice.xyz-labs.xyz`. Browser video dispatches to LiveKit `wss://eila-7257eve9.livekit.cloud`, agent name `lemonslice`, with `voice_provider=eila-runtime` and `voice_id=buddy`. Ensure the RX 6800 LiveKit worker is registered before testing.
+
+```bash
+curl -fsS https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/api/health
+curl -fsS https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev/api/health
+curl -fsS https://buddys-voice-worker.cryptocapitalgroupfl.workers.dev/api/health
+curl -fsS https://buddys.pages.dev/buddys/images/buddy-avatar.jpg -o /dev/null
+```
+
+Then open `https://buddys.pages.dev/buddys/` and test both paths:
+
+1. **Start Live Video Chat** without a lead form.
+2. Submit the lead tile with **Live Video** selected and confirm Buddy receives the saved interest/location context.

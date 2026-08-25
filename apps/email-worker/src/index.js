@@ -23,7 +23,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { status:204 });
-    if (url.pathname === "/api/health") return Response.json({ ok:true, service:"blackhole-email-worker", provider:"resend", health:"online" });
+    if (url.pathname === "/api/health") return Response.json({ ok:true, service:"buddys-email-worker", provider:"resend", health:"online" });
     if (url.pathname !== "/internal/send" || request.method !== "POST") return Response.json({ ok:false, error:"Route not found" }, { status:404 });
 
     const payload = await request.json();

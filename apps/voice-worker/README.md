@@ -11,7 +11,7 @@ Source-controlled Cloudflare Worker for Buddy/Alley outbound voice calls.
 - `POST /twilio/stream-status` receive Media Stream lifecycle callbacks
 - `GET /twilio/media` upgrade Twilio to a bidirectional WebSocket Media Stream
 - stream Twilio's raw mulaw/8000 customer audio into Deepgram realtime STT when configured
-- emit final transcripts and lifecycle events to `blackhole-communication-events`
+- emit final transcripts and lifecycle events to `buddys-communication-events`
 - write voice telemetry to `blackhole_voice_events`
 
 ## Realtime path
@@ -59,7 +59,7 @@ npx wrangler deploy
 Tail the worker before placing a real Buddy call:
 
 ```bash
-npx wrangler tail blackhole-voice-worker
+npx wrangler tail buddys-voice-worker
 ```
 
 Expected progression:

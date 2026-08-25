@@ -41,7 +41,7 @@ async function runtimeTwilioAudio(env,text){
 async function conciergeRequest(env,path,payload){
   const secret=String(env.INTERNAL_CALL_SECRET||""); if(!secret)throw new Error("INTERNAL_CALL_SECRET is not configured for concierge handoff");
   const req=new Request(`https://concierge.internal${path}`,{method:"POST",headers:{"content-type":"application/json","x-internal-call-secret":secret},body:JSON.stringify(payload)});
-  const r=env.CONCIERGE?await env.CONCIERGE.fetch(req):await fetch(`https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev${path}`,{method:"POST",headers:{"content-type":"application/json","x-internal-call-secret":secret},body:JSON.stringify(payload)});
+  const r=env.CONCIERGE?await env.CONCIERGE.fetch(req):await fetch(`https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev${path}`,{method:"POST",headers:{"content-type":"application/json","x-internal-call-secret":secret},body:JSON.stringify(payload)});
   const t=await r.text();let d={};try{d=t?JSON.parse(t):{};}catch{d={raw:t};}if(!r.ok||d?.ok===false){console.error("Concierge handoff rejected",{path,status:r.status,body:d,via:env.CONCIERGE?"service-binding":"public-fetch"});throw new Error(d?.error||`Concierge request failed (${r.status})`);}return d;
 }
 const notifyProductSelection=(env,p)=>conciergeRequest(env,"/internal/product-selected",p);

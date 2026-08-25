@@ -110,7 +110,7 @@ async function forwardSmsReply(env, body) {
 
   const response = env.CONCIERGE
     ? await env.CONCIERGE.fetch(request)
-    : await fetch("https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev/internal/sms-reply", {
+    : await fetch("https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/internal/sms-reply", {
         method:"POST",
         headers:{ "content-type":"application/json", "x-internal-call-secret":secret },
         body:JSON.stringify(payload),
@@ -157,7 +157,7 @@ export default {
     if (url.pathname === "/twilio/media") return handleTwilioMediaSocket(request, env, ctx);
 
     if (url.pathname === "/" || url.pathname === "/health") {
-      return json({ ok:true, service:"blackhole-voice-worker", status:"online", voice:"twilio", realtime:String(env.MEDIA_STREAM_URL || "").startsWith("wss://") ? "configured" : "fallback", mediaBridge:"ready", conciergeBinding:Boolean(env.CONCIERGE) });
+      return json({ ok:true, service:"buddys-voice-worker", status:"online", voice:"twilio", realtime:String(env.MEDIA_STREAM_URL || "").startsWith("wss://") ? "configured" : "fallback", mediaBridge:"ready", conciergeBinding:Boolean(env.CONCIERGE) });
     }
 
     if (url.pathname === "/twilio/sms" && request.method === "POST") {

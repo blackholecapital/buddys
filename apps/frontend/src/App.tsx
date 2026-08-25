@@ -20,7 +20,7 @@ type View = "Operations" | "Customers" | "Conversations" | "Analytics";
 type LeadAction = "email" | "call" | "sms" | "document" | "calendar";
 
 const stages:Stage[]=["New Lead","Contacted","Engaged","Docs Sent","Scheduled","Closed"];
-const DOC_BASE="https://blackhole-concierge-worker.cryptocapitalgroupfl.workers.dev/docusign/document";
+const DOC_BASE="https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/docusign/document";
 const BUDDY_TZ="America/New_York";
 const demoLeads:Lead[]=[{id:"demo-1",firstName:"Demo",lastName:"Customer",phone:"555-0100",email:"demo@example.com",interest:"Shopping inquiry",location:"Unassigned",stage:"New Lead",score:70,callStatus:"Not called",documentStatus:"Not sent"}];
 

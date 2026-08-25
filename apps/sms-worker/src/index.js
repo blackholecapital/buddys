@@ -59,7 +59,7 @@ async function sendSms(env, payload = {}) {
   if (!to) return json({ ok:false, error:"Missing SMS destination phone number" }, 400);
   if (!message) return json({ ok:false, error:"Missing SMS message body" }, 400);
 
-  const publicBase = String(env.PUBLIC_BASE_URL || "https://blackhole-sms-worker.cryptocapitalgroupfl.workers.dev").replace(/\/$/, "");
+  const publicBase = String(env.PUBLIC_BASE_URL || "https://buddys-sms-worker.cryptocapitalgroupfl.workers.dev").replace(/\/$/, "");
   const callback = new URL(`${publicBase}/twilio/status`);
   if (contactId) callback.searchParams.set("contactId", contactId);
   if (messageType) callback.searchParams.set("messageType", messageType);
@@ -95,7 +95,7 @@ export default {
 
     if (url.pathname === "/" || url.pathname === "/api/health") {
       const from = normalizePhone(env.TWILIO_PHONE_NUMBER || "");
-      return json({ ok:true, service:"blackhole-sms-worker", provider:"twilio", health:"online", configured:Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER), fromNumberMasked:maskPhone(from), fromLast4:from.slice(-4) });
+      return json({ ok:true, service:"buddys-sms-worker", provider:"twilio", health:"online", configured:Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER), fromNumberMasked:maskPhone(from), fromLast4:from.slice(-4) });
     }
 
     if (url.pathname === "/internal/send" && request.method === "POST") {

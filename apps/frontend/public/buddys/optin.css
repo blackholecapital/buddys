@@ -460,7 +460,7 @@ button[type="submit"]:disabled {
   background: #000;
 }
 .video-placeholder { display: grid; place-items: center; gap: 10px; padding: 40px; text-align: center; color: #d9e4ff; }
-.video-placeholder img { width: 190px; height: auto; opacity: .92; }
+.video-placeholder img { width: min(240px, 68%); max-height: 72%; object-fit: cover; object-position: center 18%; aspect-ratio: 2 / 3; border-radius: 18px; opacity: .92; }
 .video-placeholder span { color: #91a2c7; }
 .video-controls { padding: 14px 16px; display: grid; grid-template-columns: 48px minmax(0,1fr) 48px; gap: 12px; background: #10295a; }
 .round-control { width: 48px; height: 48px; border-radius: 50%; background: #29477f; }

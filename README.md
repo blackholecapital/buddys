@@ -16,15 +16,22 @@ Buddy web page
   -> dashboard worker
   -> Buddy concierge worker
   -> blackhole-video-worker
-  -> LiveKit room + LemonSlice avatar
+  -> LiveKit `lemonslice` agent + LemonSlice image avatar
   -> Buddy/eila-runtime voice provider
 ```
 
-LemonSlice agent: `agent_9f9ee92bbcec14c3`.
+The production default mirrors AI Fans and uses the public Buddy portrait at
+`https://buddys.pages.dev/buddys/images/buddy-avatar.jpg` as a LemonSlice `image-url` source. The saved LemonSlice agent `agent_9f9ee92bbcec14c3` remains available as an explicit fallback, but is not the default.
 
 The browser receives only the short-lived LiveKit room URL/token. LemonSlice and Black Hole capability credentials remain server-side.
 
-## Pass 1 deployment prerequisites
+## Pass 2 deployment
+
+Buddy-specific Worker, D1, Queue, and Analytics Engine names are now declared in the Wrangler configs. The phone voice worker uses `https://alley-voice.xyz-labs.xyz`; browser video is dispatched to the LiveKit agent named `lemonslice` with `eila-runtime:buddy` voice metadata.
+
+Follow [PASS2-DEPLOYMENT.md](./PASS2-DEPLOYMENT.md) to provision the two D1 databases, create the queues, bootstrap Worker names, set secrets, deploy, and smoke test.
+
+The Buddy concierge requires:
 
 Set the following Cloudflare secret on the Buddy concierge worker:
 
@@ -36,6 +43,8 @@ The value must match the deployed `blackhole-video-worker` capability token. The
 
 Optional non-secret overrides:
 
+- `BUDDY_LIVE_SOURCE` (default `image-url`)
+- `BUDDY_AVATAR_IMAGE_URL`
 - `BUDDY_LEMONSLICE_AGENT_ID`
 - `BUDDY_VIDEO_VOICE_PROVIDER` (default `eila-runtime`)
 - `BUDDY_VIDEO_VOICE_MODEL`
