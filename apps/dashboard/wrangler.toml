@@ -61,10 +61,6 @@ LOG_LEVEL = "debug"
 LOG_FORMAT = "text"
 DB_BACKEND = "memory"
 
-[[env.dev.queues.producers]]
-queue = "buddys-followup-jobs"
-binding = "FOLLOWUP_QUEUE"
-
 [[services]]
 binding = "CONCIERGE"
 service = "buddys-concierge-worker"
