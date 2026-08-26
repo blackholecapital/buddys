@@ -65,6 +65,16 @@ DocuSign and Google Calendar secrets remain optional for the first video smoke t
 
 ## 4. Deploy
 
+Install the tracked Buddy voice reference into the deployed EILA runtime before creating video sessions:
+
+```bash
+bash scripts/install-buddy-runtime-voice.sh
+# Restart the EILA voice runtime after installation.
+BUDDY_RUNTIME_TOKEN='<configured runtime token>' node scripts/smoke-buddy-runtime.mjs
+```
+
+Do not continue until the runtime smoke prints PASS for health, chat, and LiveKit TTS.
+
 ```bash
 cd apps/sms-worker && npx wrangler@latest deploy
 cd ../email-worker && npx wrangler@latest deploy
@@ -90,6 +100,7 @@ curl -fsS https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/api/h
 curl -fsS https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev/api/health
 curl -fsS https://buddys-voice-worker.cryptocapitalgroupfl.workers.dev/health
 curl -fsS https://buddys.pages.dev/buddys/images/buddy-avatar.jpg -o /dev/null
+curl -fsS https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/api/video/readiness
 ```
 
 Then open `https://buddys.pages.dev/buddys/` and test both paths:

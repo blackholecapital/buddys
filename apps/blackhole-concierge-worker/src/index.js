@@ -84,10 +84,53 @@ async function requestBuddyCall(env,contact,trigger={}){
   await emit(env,{type:"call.requested",contactId:contact.id||"",payload});return result;
 }
 
+function buddyRuntimeConfig(env){
+  return{
+    baseUrl:String(env.BUDDY_RUNTIME_URL||"https://alley-voice.xyz-labs.xyz").replace(/\/$/,""),
+    voiceId:String(env.BUDDY_VIDEO_VOICE_ID||"buddy").trim(),
+  };
+}
+
+async function getBuddyRuntimeReadiness(env){
+  const config=buddyRuntimeConfig(env);
+  let response;
+  try{
+    response=await fetch(`${config.baseUrl}/health`,{headers:{accept:"application/json"},signal:AbortSignal.timeout(5000)});
+  }catch(error){
+    return{ok:false,baseUrl:config.baseUrl,voiceId:config.voiceId,errors:[`runtime health request failed: ${error.message}`]};
+  }
+  if(!response.ok)return{ok:false,baseUrl:config.baseUrl,voiceId:config.voiceId,errors:[`runtime health returned ${response.status}`]};
+  const health=await response.json().catch(()=>null);
+  if(!health)return{ok:false,baseUrl:config.baseUrl,voiceId:config.voiceId,errors:["runtime health returned invalid JSON"]};
+  const availableVoices=Array.isArray(health?.tts?.availableVoices)?health.tts.availableVoices:[];
+  const preparedVoices=Array.isArray(health?.tts?.preparedVoices)?health.tts.preparedVoices:[];
+  const errors=[];
+  if(health?.ok!==true)errors.push("runtime is not healthy");
+  if(health?.compatibility?.chat!==true||health?.llm?.baseUrlConfigured!==true||!health?.llm?.model)errors.push("LLM chat is not configured");
+  if(health?.tts?.loaded!==true)errors.push("TTS backend is not loaded");
+  if(!availableVoices.includes(config.voiceId))errors.push(`voice '${config.voiceId}' is not available`);
+  if(!preparedVoices.includes(config.voiceId))errors.push(`voice '${config.voiceId}' is not prepared`);
+  return{
+    ok:errors.length===0,
+    baseUrl:config.baseUrl,
+    voiceId:config.voiceId,
+    llm:{provider:health?.llm?.provider||"",model:health?.llm?.model||""},
+    tts:{backend:health?.tts?.backend||"",availableVoices,preparedVoices},
+    errors,
+  };
+}
+
+async function requireBuddyRuntime(env){
+  const readiness=await getBuddyRuntimeReadiness(env);
+  if(!readiness.ok)throw new Error(`Buddy runtime is not ready: ${readiness.errors.join("; ")}`);
+  return readiness;
+}
+
 
 async function requestBuddyVideoSession(env,payload={}){
   if(!env.VIDEO)return{ok:false,error:"VIDEO binding not configured"};
   if(!env.BLACKHOLE_CAPABILITY_TOKEN)throw new Error("BLACKHOLE_CAPABILITY_TOKEN is not configured");
+  const runtimeReadiness=await requireBuddyRuntime(env);
   const contactId=String(payload.contactId||payload.contact?.id||"").trim();
   const contact=contactId?await resolveContact(env,contactId,payload):mergeContact(payload.contact||{},payload.context||{});
   const directSessionId=crypto.randomUUID();
@@ -145,7 +188,7 @@ async function requestBuddyVideoSession(env,payload={}){
     await updateDashboardContact(env,contactId,{stage:"Engaged",callStatus:"Video session created"});
   }
   await emit(env,{type:"video.session.created",contactId,room:data.room||"",dispatchId:data.dispatchId||"",source:payload.source||"buddy-web"});
-  return{ok:true,...data,contactId:contactId||undefined};
+  return{ok:true,...data,contactId:contactId||undefined,runtime:{voiceId:runtimeReadiness.voiceId,llm:runtimeReadiness.llm}};
 }
 
 async function processProductSelection(env,payload={}){
@@ -177,6 +220,10 @@ async function scheduleDelivery(env,payload={}){
 export default { async fetch(request,env,ctx){
   const url=new URL(request.url);
   if(url.pathname==="/api/health")return Response.json({ok:true,service:"buddys-concierge-worker",health:"online",runtime:"edge",docusign:docusignConfigured(env)?"configured":"not-configured",googleCalendar:googleCalendarConfigured(env)?"configured":"not-configured",googleCalendarTimeZone:googleCalendarTimeZone(env)});
+  if(url.pathname==="/api/video/readiness"){
+    const readiness=await getBuddyRuntimeReadiness(env);
+    return Response.json(readiness,{status:readiness.ok?200:503});
+  }
   if(url.pathname==="/docusign/consent-complete")return new Response("DocuSign consent granted. You can close this tab and return to Buddy.",{status:200,headers:{"Content-Type":"text/plain; charset=utf-8"}});
   if(url.pathname.startsWith("/docusign/sign/")&&request.method==="GET"){const token=decodeURIComponent(url.pathname.slice("/docusign/sign/".length));const row=await resolveSigningShortLink(env,token).catch(()=>null);if(!row?.target_url)return new Response("This signing link is unavailable.",{status:404});return Response.redirect(String(row.target_url),302);}
   if(url.pathname.startsWith("/docusign/document/")&&request.method==="GET"){

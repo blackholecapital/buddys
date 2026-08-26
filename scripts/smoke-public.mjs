@@ -34,6 +34,18 @@ const checks = [
     url:"https://alley-voice.xyz-labs.xyz/health",
     status:200,
     jsonOk:true,
+    validateJson:(body) => body?.compatibility?.chat === true
+      && body?.llm?.baseUrlConfigured === true
+      && Array.isArray(body?.tts?.availableVoices)
+      && body.tts.availableVoices.includes("buddy")
+      && Array.isArray(body?.tts?.preparedVoices)
+      && body.tts.preparedVoices.includes("buddy"),
+  },
+  {
+    name:"Buddy video runtime readiness",
+    url:"https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/api/video/readiness",
+    status:200,
+    jsonOk:true,
   },
   {
     name:"Buddy LemonSlice relay route",
@@ -63,7 +75,10 @@ for (const check of checks) {
     const bodyMatches = !check.body || check.body.test(body);
     let jsonMatches = true;
     if (check.jsonOk) {
-      try { jsonMatches = JSON.parse(body)?.ok === true; }
+      try {
+        const parsed = JSON.parse(body);
+        jsonMatches = parsed?.ok === true && (!check.validateJson || check.validateJson(parsed));
+      }
       catch { jsonMatches = false; }
     }
 
