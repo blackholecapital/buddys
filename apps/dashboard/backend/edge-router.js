@@ -16,6 +16,7 @@ const calls = require("./functions/api/calls");
 const callNow = require("./functions/api/call-now");
 const videoSession = require("./functions/api/video-session");
 const videoTranscript = require("./functions/api/video-transcript");
+const videoAction = require("./functions/api/video-action");
 const templates = require("./functions/api/templates");
 const campaigns = require("./functions/api/campaigns");
 const inbox = require("./functions/api/inbox");
@@ -50,6 +51,7 @@ function routeRequest(pathname, method, query = {}, headers = {}) {
   if (pathname === "/api/call-now") return { fn: callNow, params:{ id:query.id || "", sig:query.sig || "" } };
   if (pathname === "/api/video/session") return { fn: videoSession, params:{} };
   if (pathname === "/api/video/transcript") return { fn: videoTranscript, params:{} };
+  if (pathname === "/api/video/action") return { fn: videoAction, params:{} };
 
   if (pathname === "/api/contacts") return { fn: contacts, params: {} };
   if (pathname === "/api/contacts/import") return { fn: contacts, params: { action: "import" } };

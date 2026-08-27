@@ -4,6 +4,29 @@ const { readDb } = require("../../../layers/core/db");
 const { conciergePost } = require("../../../../shared/services/concierge");
 const rateLimits = require("../../../layers/domain/rateLimits");
 
+function base64url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function workflowToken(secret, contactId, sessionId) {
+  if (!secret || !contactId || !sessionId) return "";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name:"HMAC", hash:"SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`${contactId}:${sessionId}`),
+  );
+  return base64url(new Uint8Array(signature));
+}
+
 module.exports = async function handler({ method, body, env }) {
   if (method !== "POST") return { ok:false, error:"POST only" };
 
@@ -44,9 +67,13 @@ module.exports = async function handler({ method, body, env }) {
       context,
       source:body?.source || (contactId ? "lead-form" : "direct"),
     });
-    return result?.ok === false
-      ? { ok:false, error:result.error || "Video session failed" }
-      : { ok:true, ...result };
+    if (result?.ok === false) return { ok:false, error:result.error || "Video session failed" };
+    const sessionId = String(result.dispatchId || result.sessionId || result.room || "");
+    return {
+      ok:true,
+      ...result,
+      workflowToken:await workflowToken(env.INTERNAL_CALL_SECRET, contactId, sessionId),
+    };
   } catch (error) {
     return { ok:false, error:error.message || "Unable to create Buddy video room" };
   }

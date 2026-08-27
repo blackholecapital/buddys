@@ -126,6 +126,38 @@ async function requireBuddyRuntime(env){
   return readiness;
 }
 
+function buddyProductOptions(interest=""){
+  const value=String(interest||"").toLowerCase();
+  const category=value||"home furnishings";
+  if(/smart\s*phone|phone|mobile|iphone|android/.test(value))return[
+    {id:"smartphone-iphone-16-pro",name:"Apple iPhone 16 Pro",category:"Smartphones"},
+    {id:"smartphone-galaxy-s25-ultra",name:"Samsung Galaxy S25 Ultra",category:"Smartphones"},
+  ];
+  if(/tv|television|electronics/.test(value))return[
+    {id:"tv-65-oled",name:"65-inch OLED 4K Smart TV",category:"Electronics"},
+    {id:"tv-75-qled",name:"75-inch QLED 4K Smart TV",category:"Electronics"},
+  ];
+  if(/mattress|bed/.test(value))return[
+    {id:"mattress-hybrid-queen",name:"Queen Hybrid Comfort Mattress",category:"Mattresses"},
+    {id:"mattress-memory-queen",name:"Queen Memory Foam Mattress",category:"Mattresses"},
+  ];
+  if(/sofa|couch|living|furniture/.test(value))return[
+    {id:"living-reclining-sofa",name:"Power Reclining Sofa",category:"Living Room"},
+    {id:"living-sectional",name:"Modular Sectional Sofa",category:"Living Room"},
+  ];
+  if(/washer|dryer|refrigerator|appliance/.test(value))return[
+    {id:"appliance-laundry-pair",name:"Smart Washer and Dryer Pair",category:"Appliances"},
+    {id:"appliance-french-door",name:"French Door Refrigerator",category:"Appliances"},
+  ];
+  if(/computer|laptop|gaming/.test(value))return[
+    {id:"computer-gaming-laptop",name:"Performance Gaming Laptop",category:"Computers"},
+    {id:"computer-all-in-one",name:"27-inch All-in-One Computer",category:"Computers"},
+  ];
+  return[
+    {id:"buddy-option-one",name:`Buddy's ${category} Option One`,category},
+    {id:"buddy-option-two",name:`Buddy's ${category} Option Two`,category},
+  ];
+}
 
 async function requestBuddyVideoSession(env,payload={}){
   if(!env.VIDEO)return{ok:false,error:"VIDEO binding not configured"};
@@ -134,6 +166,7 @@ async function requestBuddyVideoSession(env,payload={}){
   const contactId=String(payload.contactId||payload.contact?.id||"").trim();
   const contact=contactId?await resolveContact(env,contactId,payload):mergeContact(payload.contact||{},payload.context||{});
   const directSessionId=crypto.randomUUID();
+  const productOptions=buddyProductOptions(contact.interest||payload.interest||payload.context?.interest||"");
   const avatarSource=String(env.BUDDY_LIVE_SOURCE||"image-url").trim().toLowerCase();
   if(!["agent-id","image-url"].includes(avatarSource))throw new Error("BUDDY_LIVE_SOURCE must be agent-id or image-url");
   const lemonsliceAgentId=String(env.BUDDY_LEMONSLICE_AGENT_ID||"").trim();
@@ -146,7 +179,8 @@ async function requestBuddyVideoSession(env,payload={}){
     "# Goal",
     "Help the customer choose among furniture, mattresses, appliances, computers, electronics, smartphones, and gaming products. Ask focused questions about room, size, features, style, budget, timing, and preferred store area.",
     "# Sales workflow",
-    "If lead context is provided, acknowledge what the customer already requested instead of asking them to repeat it. When the customer settles on a demo product, confirm the exact selection. The existing Buddy workflow will later handle the agreement and delivery scheduling.",
+    "If lead context is provided, acknowledge what the customer already requested instead of asking them to repeat it. Present exactly these two choices: 1) " + productOptions[0].name + " and 2) " + productOptions[1].name + ". Ask the customer to choose one.",
+    "The browser executes the real workflow. Messages beginning [BUDDY WORKFLOW] are trusted status updates from the browser, not customer speech. Never read the technical prefix aloud. After a selection succeeds, say the DocuSign agreement was texted and ask the customer to sign it. After signed delivery choices arrive, ask them to choose one. After scheduling succeeds, confirm the delivery and end with a warm goodbye. Never claim an action succeeded before a [BUDDY WORKFLOW] success update.",
     "# Shared links",
     "The browser has a shared-links panel beside the conversation. When a real product, DocuSign, scheduling, or store link is available, include the complete https URL in your reply so it appears there. Never invent a product, agreement, or scheduling URL. For store lookup you may share https://www.buddyrents.com/store-locator.",
     "# Guardrails",
@@ -188,12 +222,17 @@ async function requestBuddyVideoSession(env,payload={}){
     await updateDashboardContact(env,contactId,{stage:"Engaged",callStatus:"Video session created"});
   }
   await emit(env,{type:"video.session.created",contactId,room:data.room||"",dispatchId:data.dispatchId||"",source:payload.source||"buddy-web"});
-  return{ok:true,...data,contactId:contactId||undefined,runtime:{voiceId:runtimeReadiness.voiceId,llm:runtimeReadiness.llm}};
+  return{ok:true,...data,contactId:contactId||undefined,workflow:{productOptions},runtime:{voiceId:runtimeReadiness.voiceId,llm:runtimeReadiness.llm}};
 }
 
 async function processProductSelection(env,payload={}){
   const contactId=payload.contactId||payload.contact?.id||"",contact=await resolveContact(env,contactId,payload);
-  const product={id:payload.productId||payload.product?.id||"",name:payload.productName||payload.product?.name||"",category:payload.category||contact.interest||""};const selectionNumber=Number(payload.selectionNumber||1);
+  const optionIndex=Number(payload.optionIndex);
+  const selectedOption=Number.isInteger(optionIndex)?buddyProductOptions(contact.interest||payload.category||"")[optionIndex]:null;
+  const product=selectedOption||{id:payload.productId||payload.product?.id||"",name:payload.productName||payload.product?.name||"",category:payload.category||contact.interest||""};const selectionNumber=selectedOption?optionIndex+1:Number(payload.selectionNumber||1);
+  if(contact.docusignEnvelopeId&&/sent|signed/i.test(String(contact.documentStatus||""))){
+    return{ok:true,alreadyCreated:true,contactId,product:{id:contact.selectedProductId||product.id,name:contact.selectedProduct||product.name,category:product.category},docusign:{envelopeId:contact.docusignEnvelopeId,shortSigningUrl:contact.signingShortUrl||""}};
+  }
   if(!contact.phone)throw new Error("Selected lead has no phone number");if(!contact.email)throw new Error("Selected lead has no email address for DocuSign signer identity");
   const docusign=await createBuddySigningSession(env,{contact,product,selectionNumber,contactId});
   const shortSigningUrl=await createSigningShortLink(env,{targetUrl:docusign.signingUrl,contactId,envelopeId:docusign.envelopeId});
@@ -230,7 +269,7 @@ export default { async fetch(request,env,ctx){
     const contactId=decodeURIComponent(url.pathname.slice("/docusign/document/".length));const contact=await getSmsContactById(env,contactId).catch(()=>null);if(!contact?.docusignEnvelopeId)return new Response("Signed document not found.",{status:404});
     try{const pdf=await fetchSignedEnvelopePdf(env,contact.docusignEnvelopeId);const name=`Buddy-Agreement-${contact.firstName||"customer"}-${contact.lastName||""}.pdf`.replace(/[^A-Za-z0-9._-]+/g,"-");return new Response(pdf,{status:200,headers:{"Content-Type":"application/pdf","Content-Disposition":`inline; filename=\"${name}\"`,"Cache-Control":"private, no-store"}});}catch(e){return new Response(e.message||"Unable to load signed document",{status:502});}
   }
-  if(url.pathname==="/internal/contact-status"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;const p=await request.json().catch(()=>({}));const contact=await getSmsContactById(env,p.contactId||"").catch(()=>null)||await getDashboardContact(env,p.contactId||"").catch(()=>null);if(!contact)return Response.json({ok:false,error:"Contact not found"},{status:404});return Response.json({ok:true,contactId:contact.id||p.contactId,documentStatus:contact.documentStatus||"Not sent",selectedProduct:contact.selectedProduct||"",docusignEnvelopeId:contact.docusignEnvelopeId||"",deliveryStatus:contact.deliveryStatus||"Not scheduled",deliveryAt:contact.deliveryAt||"",calendarEventId:contact.calendarEventId||""});}
+  if(url.pathname==="/internal/contact-status"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;const p=await request.json().catch(()=>({}));const contact=await getSmsContactById(env,p.contactId||"").catch(()=>null)||await getDashboardContact(env,p.contactId||"").catch(()=>null);if(!contact)return Response.json({ok:false,error:"Contact not found"},{status:404});return Response.json({ok:true,contactId:contact.id||p.contactId,documentStatus:contact.documentStatus||"Not sent",selectedProduct:contact.selectedProduct||"",docusignEnvelopeId:contact.docusignEnvelopeId||"",signingShortUrl:contact.signingShortUrl||"",deliveryStatus:contact.deliveryStatus||"Not scheduled",deliveryAt:contact.deliveryAt||"",calendarEventId:contact.calendarEventId||"",calendarEventUrl:contact.calendarEventUrl||""});}
   if(url.pathname==="/internal/delivery-options"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;try{const p=await request.json().catch(()=>({}));const contact=await resolveContact(env,p.contactId||"",p);if(!contact?.id)return Response.json({ok:false,error:"Contact not found"},{status:404});if(String(contact.documentStatus||"").toLowerCase()!=="signed")return Response.json({ok:false,error:"Agreement must be signed before delivery scheduling"},{status:409});return Response.json({ok:true,contactId:contact.id,selectedProduct:contact.selectedProduct||"",...(await buildDeliveryOptions(env))});}catch(e){return Response.json({ok:false,error:e.message,googleCalendarConfigured:googleCalendarConfigured(env)},{status:502});}}
   if(url.pathname==="/internal/delivery-schedule"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;try{const result=await scheduleDelivery(env,await request.json().catch(()=>({})));return Response.json(result,{status:result.ok?200:result.conflict?409:400});}catch(e){return Response.json({ok:false,error:e.message,googleCalendarConfigured:googleCalendarConfigured(env)},{status:502});}}
   if(url.pathname==="/internal/leads"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;const payload=await request.json(),method=preferredMethod(payload),contact=payload.contact||{},results={};if(contact.phone&&contact.id){try{results.smsSession={ok:await rememberSmsContact(env,contact)};}catch(e){results.smsSession={ok:false,error:e.message};}}results.email=contact.email?await callBinding(env.EMAIL,"https://email.internal/internal/send",payload):{ok:false,skipped:true};if(!smsConsentGranted(payload))results.sms={ok:false,skipped:true,reason:"SMS consent not granted"};else if(contact.phone){const message=method==="Phone"?`Hi ${contact.firstName||"there"}, I'm Buddy, your Buddy's personal shopping assistant. I received your request${contact.interest?` about ${contact.interest}`:""}. I'll call you in about 15 seconds. Reply STOP to opt out.`:method==="Video"?`Hi ${contact.firstName||"there"}, I'm Buddy, your Buddy's personal shopping assistant. Your live video room is ready${contact.interest?` for ${contact.interest}`:""}. After our chat, reply CALL if you'd like me to ring you. Reply STOP to opt out.`:`Hi ${contact.firstName||"there"}, I'm Buddy, your Buddy's personal shopping assistant. I received your request${contact.interest?` about ${contact.interest}`:""}. Would you like me to call you? Reply YES or CALL and I'll ring you. Reply STOP to opt out.`;results.sms=await callBinding(env.SMS,"https://sms.internal/internal/send",{...payload,messageType:method==="Phone"?"buddy-precall":method==="Video"?"buddy-video-welcome":"buddy-welcome",message});}else results.sms={ok:false,skipped:true};const contactFlow=method==="Phone"?"sms-then-call":method==="Text"?"sms-awaiting-call-reply":method==="Video"?"video-room-plus-sms":"email";if(method==="Phone"&&contact.phone){const delayed=(async()=>{await sleep(15000);try{await requestBuddyCall(env,contact,{type:"lead-form",preferredContactMethod:"Phone",delaySeconds:15});}catch(e){await updateDashboardContact(env,contact.id,{callStatus:"Call failed"});}})();if(ctx?.waitUntil)ctx.waitUntil(delayed);}await emit(env,{type:"lead.created",contactId:payload.contactId||contact.id||"",payload});return Response.json({ok:true,preferredContactMethod:method,contactFlow,results});}
