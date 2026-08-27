@@ -50,8 +50,13 @@ assert.equal(forwarded.voiceProvider, "eila-runtime");
 assert.equal(forwarded.voiceId, "buddy");
 assert.match(forwarded.instructions, /Interest: TVs/);
 assert.match(forwarded.instructions, /Area: Orlando/);
+assert.match(forwarded.instructions, /65-inch OLED 4K Smart TV/);
+assert.match(forwarded.instructions, /75-inch QLED 4K Smart TV/);
+assert.match(forwarded.instructions, /\[BUDDY WORKFLOW\]/);
 
 const body = await response.json();
+assert.equal(body.workflow.productOptions.length, 2);
+assert.equal(body.workflow.productOptions[0].id, "tv-65-oled");
 assert.equal(body.runtime.voiceId, "buddy");
 assert.equal(body.runtime.llm.model, "qwen3.5:9b");
 
@@ -109,6 +114,6 @@ assert.equal(videoLeadBody.results.sms.ok, true);
 assert.equal(videoLeadSms.messageType, "buddy-video-welcome");
 assert.match(videoLeadSms.message, /reply CALL/i);
 
-console.log("Buddy image-avatar video payload: OK");
+console.log("Buddy image-avatar video payload and live sales options: OK");
 console.log("Buddy missing-voice preflight: OK");
 console.log("Buddy video lead SMS follow-up: OK");
