@@ -97,17 +97,21 @@ function runtimeReadinessCacheRequest(config){
 
 async function cachedRuntimeReadiness(config){
   if(typeof caches==="undefined"||!caches?.default)return null;
-  const response=await caches.default.match(runtimeReadinessCacheRequest(config));
-  if(!response)return null;
-  const value=await response.json().catch(()=>null);
-  return value?.ok===true?{...value,cached:true}:null;
+  try{
+    const response=await caches.default.match(runtimeReadinessCacheRequest(config));
+    if(!response)return null;
+    const value=await response.json().catch(()=>null);
+    return value?.ok===true?{...value,cached:true}:null;
+  }catch{return null;}
 }
 
 async function cacheRuntimeReadiness(config,value){
   if(typeof caches==="undefined"||!caches?.default||value?.ok!==true)return;
-  await caches.default.put(runtimeReadinessCacheRequest(config),new Response(JSON.stringify(value),{
-    headers:{"content-type":"application/json","cache-control":"public, max-age=300"},
-  }));
+  try{
+    await caches.default.put(runtimeReadinessCacheRequest(config),new Response(JSON.stringify(value),{
+      headers:{"content-type":"application/json","cache-control":"public, max-age=300"},
+    }));
+  }catch{}
 }
 
 async function getBuddyRuntimeReadiness(env){
