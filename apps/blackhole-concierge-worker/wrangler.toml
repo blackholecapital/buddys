@@ -14,7 +14,7 @@ BUDDY_AVATAR_IMAGE_URL = "https://buddys-4nm.pages.dev/buddys/images/buddy-avata
 BUDDY_LEMONSLICE_AGENT_ID = "agent_9f9ee92bbcec14c3"
 BUDDY_VIDEO_VOICE_PROVIDER = "eila-runtime"
 BUDDY_VIDEO_VOICE_ID = "buddy"
-BUDDY_RUNTIME_URL = "https://alley-voice.xyz-labs.xyz"
+BUDDY_RUNTIME_URL = "https://buddy-voice.xyz-labs.xyz"
 BUDDY_AVATAR_PROMPT = "Use friendly, attentive upper-body movement and natural hand gestures while speaking."
 
 # Required secret for the shared blackhole-video-worker:
