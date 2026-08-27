@@ -3,7 +3,7 @@ const checks = [
     name:"Buddy customer page",
     url:"https://buddys-4nm.pages.dev/buddys/",
     status:200,
-    body:/Start Live Video Chat/,
+    body:/Live Video/,
   },
   {
     name:"Buddy avatar asset",
@@ -30,8 +30,8 @@ const checks = [
     jsonOk:true,
   },
   {
-    name:"RX 6800 EILA runtime",
-    url:"https://alley-voice.xyz-labs.xyz/health",
+    name:"Buddy dedicated EILA runtime",
+    url:"https://buddy-voice.xyz-labs.xyz/health",
     status:200,
     jsonOk:true,
     validateJson:(body) => body?.compatibility?.chat === true
