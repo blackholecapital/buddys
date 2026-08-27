@@ -43,6 +43,33 @@ BUDDY_RUNTIME_TOKEN='<configured runtime token>' node scripts/smoke-buddy-runtim
 
 The unauthenticated readiness status is also available at `/api/video/readiness` on the Buddy concierge Worker. It exposes configuration state only, never credentials.
 
+
+## Live-video latency tuning
+
+Buddy's fastest path keeps Qwen and the Buddy voice warm, streams phrase-progressive PCM, and sends the avatar agent directly to the home runtime instead of round-tripping each spoken turn through the public Cloudflare Tunnel.
+
+On **AI-Linux**, apply the safe runtime settings and restart the EILA runtime:
+
+```bash
+bash scripts/configure-buddy-runtime-performance.sh
+```
+
+On the **Ubuntu-22.04 avatar-agent distro**, select the fastest reachable Buddy runtime, enable streaming TTS, and restart the systemd-owned LiveKit worker:
+
+```bash
+bash scripts/configure-buddy-avatar-latency.sh
+```
+
+The agent script preserves a timestamped `.env` backup and never prints runtime credentials. It uses the direct port-8010 path only when a two-second health probe succeeds; otherwise it retains the public Buddy URL.
+
+Measure the complete local LLM and TTS path after both restarts:
+
+```bash
+BUDDY_RUNTIME_TOKEN='<configured runtime token>' node scripts/benchmark-buddy-latency.mjs
+```
+
+The acceptance target is first audio below 800 ms p50 and 1.2 seconds p95. A health response that reports `"device":"cpu"` identifies Chatterbox as CPU-bound; the tuning script switches to `cuda` only when the deployed PyTorch build confirms CUDA/ROCm is available.
+
 ## Pass 2 deployment
 
 Buddy-specific Worker, D1, Queue, and Analytics Engine names are now declared in the Wrangler configs. The phone voice worker uses `https://alley-voice.xyz-labs.xyz`; browser video is dispatched to the LiveKit agent named `lemonslice` with `eila-runtime:buddy` voice metadata.
