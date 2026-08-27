@@ -29,9 +29,9 @@ with wave.open(path, "rb") as wav:
     sample_rate = wav.getframerate()
     seconds = wav.getnframes() / sample_rate
 
-if channels != 1 or sample_width != 2 or sample_rate != 24000 or seconds < 3:
+if channels != 1 or sample_width != 2 or sample_rate != 24000 or seconds <= 5:
     raise SystemExit(
-        f"Buddy reference must be mono PCM16 24 kHz and at least 3 seconds; "
+        f"Buddy reference must be mono PCM16 24 kHz and longer than 5 seconds; "
         f"got channels={channels}, width={sample_width}, rate={sample_rate}, duration={seconds:.2f}s"
     )
 print(f"Buddy reference validated: mono PCM16 24 kHz, {seconds:.2f}s")
