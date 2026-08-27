@@ -29,6 +29,7 @@ probe_runtime() {
 }
 
 runtime_url=""
+ai_ip=""
 for candidate in "http://127.0.0.1:8010"; do
   if probe_runtime "${candidate}"; then
     runtime_url="${candidate}"
@@ -59,14 +60,26 @@ upsert_env BLACKHOLE_BUDDYS_RUNTIME_URL "${runtime_url}"
 upsert_env EILA_LIVEKIT_STREAMING_TTS true
 
 current_llm_base="$(sed -n 's/^LOCAL_LLM_BASE_URL=//p' "${env_file}" | tail -1)"
-if [[ -n "${current_llm_base}" ]]; then
-  tags_url="${current_llm_base%/v1}/api/tags"
-  if curl -fsS --max-time 4 "${tags_url}" 2>/dev/null | grep -q '"qwen3.5:9b"'; then
-    upsert_env LOCAL_LLM_MODEL qwen3.5:9b
-    echo "Buddy LiveKit LLM set to the available qwen3.5:9b model."
-  else
-    echo "Current LiveKit LLM host does not advertise qwen3.5:9b; model selection left unchanged."
+llm_base=""
+llm_candidates=("http://127.0.0.1:11434")
+if [[ -n "${ai_ip}" ]]; then llm_candidates+=("http://${ai_ip}:11434"); fi
+if [[ -n "${current_llm_base}" ]]; then llm_candidates+=("${current_llm_base%/}"); fi
+
+for candidate in "${llm_candidates[@]}"; do
+  ollama_root="${candidate%/v1}"
+  if curl -fsS --max-time 4 "${ollama_root}/api/tags" 2>/dev/null | grep -q '"qwen3.5:9b"'; then
+    llm_base="${ollama_root}/v1"
+    break
   fi
+done
+
+if [[ -n "${llm_base}" ]]; then
+  upsert_env LOCAL_LLM_BASE_URL "${llm_base}"
+  upsert_env LOCAL_LLM_MODEL qwen3.5:9b
+  upsert_env LOCAL_LLM_TEMPERATURE 0.35
+  echo "Buddy LiveKit LLM set to qwen3.5:9b at ${llm_base}."
+else
+  echo "No reachable Ollama host advertises qwen3.5:9b; LiveKit LLM settings left unchanged."
 fi
 
 sudo systemctl restart "${service_name}"
