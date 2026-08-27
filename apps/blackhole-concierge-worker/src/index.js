@@ -91,8 +91,34 @@ function buddyRuntimeConfig(env){
   };
 }
 
+function runtimeReadinessCacheRequest(config){
+  return new Request(`https://buddy-runtime-readiness.internal/${encodeURIComponent(config.voiceId)}?base=${encodeURIComponent(config.baseUrl)}`);
+}
+
+async function cachedRuntimeReadiness(config){
+  if(typeof caches==="undefined"||!caches?.default)return null;
+  try{
+    const response=await caches.default.match(runtimeReadinessCacheRequest(config));
+    if(!response)return null;
+    const value=await response.json().catch(()=>null);
+    return value?.ok===true?{...value,cached:true}:null;
+  }catch{return null;}
+}
+
+async function cacheRuntimeReadiness(config,value){
+  if(typeof caches==="undefined"||!caches?.default||value?.ok!==true)return;
+  try{
+    await caches.default.put(runtimeReadinessCacheRequest(config),new Response(JSON.stringify(value),{
+      headers:{"content-type":"application/json","cache-control":"public, max-age=300"},
+    }));
+  }catch{}
+}
+
 async function getBuddyRuntimeReadiness(env){
   const config=buddyRuntimeConfig(env);
+  const cached=await cachedRuntimeReadiness(config);
+  if(cached)return cached;
+  const started=Date.now();
   let response;
   try{
     response=await fetch(`${config.baseUrl}/health`,{headers:{accept:"application/json"},signal:AbortSignal.timeout(5000)});
@@ -110,14 +136,18 @@ async function getBuddyRuntimeReadiness(env){
   if(health?.tts?.loaded!==true)errors.push("TTS backend is not loaded");
   if(!availableVoices.includes(config.voiceId))errors.push(`voice '${config.voiceId}' is not available`);
   if(!preparedVoices.includes(config.voiceId))errors.push(`voice '${config.voiceId}' is not prepared`);
-  return{
+  const readiness={
     ok:errors.length===0,
     baseUrl:config.baseUrl,
     voiceId:config.voiceId,
     llm:{provider:health?.llm?.provider||"",model:health?.llm?.model||""},
-    tts:{backend:health?.tts?.backend||"",availableVoices,preparedVoices},
+    tts:{backend:health?.tts?.backend||"",device:health?.tts?.device||"",availableVoices,preparedVoices},
+    checkMs:Date.now()-started,
+    cached:false,
     errors,
   };
+  await cacheRuntimeReadiness(config,readiness);
+  return readiness;
 }
 
 async function requireBuddyRuntime(env){
@@ -185,8 +215,8 @@ async function requestBuddyVideoSession(env,payload={}){
     "The browser has a shared-links panel beside the conversation. When a real product, DocuSign, scheduling, or store link is available, include the complete https URL in your reply so it appears there. Never invent a product, agreement, or scheduling URL. For store lookup you may share https://www.buddyrents.com/store-locator.",
     "# Guardrails",
     "Never request or accept card, bank, Social Security, or other payment-source data. Explain that this is a demonstration when exact inventory, pricing, financing approval, or store availability is not connected. Do not invent stock or approval decisions.",
-    "# Voice",
-    "Spoken output only. Be warm, concise, conversational, and useful. Keep most turns under three sentences and ask one clear question at a time.",
+    "# Voice and response speed",
+    "Spoken output only. Respond immediately. Use one short sentence and no more than 24 spoken words unless safety or a workflow error requires more. Never restate the customer's question or repeat known context. Ask one clear question at a time.",
     "# Known customer context",
     `Name: ${contact.firstName||payload.firstName||"Guest"} ${contact.lastName||payload.lastName||""}. Interest: ${contact.interest||payload.interest||"Not provided"}. Area: ${contact.location||payload.location||"Not provided"}. Notes: ${contact.comments||payload.comments||"None"}.`,
     "# Reminder",
