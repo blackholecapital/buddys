@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 runtime_dir="${BUDDY_RUNTIME_DIR:-/workspace/repos/EBC/apps/eila-voice-runtime}"
-source_wav="${BUDDY_VOICE_SOURCE:-${repo_root}/buddy-chatterbox-test.wav}"
+source_wav="${BUDDY_VOICE_SOURCE:-${repo_root}/buddy-kokoro-test.wav}"
 target_dir="${runtime_dir}/assets/voices/buddy"
 target_wav="${target_dir}/reference.wav"
 
@@ -14,31 +14,53 @@ if [[ ! -d "${runtime_dir}" ]]; then
 fi
 
 if [[ ! -f "${source_wav}" ]]; then
-  echo "Buddy reference voice not found: ${source_wav}" >&2
+  echo "Buddy male reference voice not found: ${source_wav}" >&2
   exit 1
 fi
 
-python3 - "${source_wav}" <<'PY'
+install -d -m 0755 "${target_dir}"
+
+python3 - "${source_wav}" "${target_wav}" <<'PY'
+import math
 import sys
 import wave
 
-path = sys.argv[1]
-with wave.open(path, "rb") as wav:
+source, target = sys.argv[1:3]
+with wave.open(source, "rb") as wav:
     channels = wav.getnchannels()
     sample_width = wav.getsampwidth()
     sample_rate = wav.getframerate()
-    seconds = wav.getnframes() / sample_rate
+    frame_rate = wav.getframerate()
+    frames = wav.readframes(wav.getnframes())
+    frame_count = wav.getnframes()
 
-if channels != 1 or sample_width != 2 or sample_rate != 24000 or seconds <= 5:
+seconds = frame_count / sample_rate
+if channels != 1 or sample_width != 2 or sample_rate != 24000:
     raise SystemExit(
-        f"Buddy reference must be mono PCM16 24 kHz and longer than 5 seconds; "
-        f"got channels={channels}, width={sample_width}, rate={sample_rate}, duration={seconds:.2f}s"
+        "Buddy reference must be mono PCM16 24 kHz; "
+        f"got channels={channels}, width={sample_width}, rate={sample_rate}"
     )
-print(f"Buddy reference validated: mono PCM16 24 kHz, {seconds:.2f}s")
+
+# Chatterbox requires a prompt longer than five seconds. The selected Buddy
+# male audition is intentionally short, so repeat its PCM frames at install
+# time without changing pitch, sample rate, or the source asset in Git.
+repeats = max(1, math.ceil(8.0 / seconds))
+with wave.open(target, "wb") as wav:
+    wav.setnchannels(channels)
+    wav.setsampwidth(sample_width)
+    wav.setframerate(frame_rate)
+    wav.writeframes(frames * repeats)
+
+installed_seconds = seconds * repeats
+if installed_seconds <= 5:
+    raise SystemExit(f"Installed Buddy reference is too short: {installed_seconds:.2f}s")
+print(
+    f"Buddy male reference installed: mono PCM16 24 kHz, "
+    f"{installed_seconds:.2f}s ({repeats}x selected audition)"
+)
 PY
 
-install -d -m 0755 "${target_dir}"
-install -m 0644 "${source_wav}" "${target_wav}"
+chmod 0644 "${target_wav}"
 
-echo "Installed Buddy reference voice: ${target_wav}"
+echo "Installed Buddy male reference voice: ${target_wav}"
 echo "Restart the EILA voice runtime, then run: node scripts/smoke-buddy-runtime.mjs"
