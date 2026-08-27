@@ -25,8 +25,9 @@
   const remoteAudioElements = new Set();
   const renderedTranscriptions = new Set();
   const sharedUrls = new Set();
-  let sessionMeta = { contactId:"", room:"", sessionId:"" };
+  let sessionMeta = { contactId:"", room:"", sessionId:"", workflowToken:"" };
   let sessionTranscript = [];
+  let workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null };
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -89,6 +90,186 @@
     card.append(label, domain);
     resourceList.appendChild(card);
     resourcePanel.classList.remove("hidden");
+  }
+
+  function clearWorkflowCards() {
+    resourceList?.querySelectorAll(".buddy-workflow-card").forEach((node) => node.remove());
+  }
+
+  function addWorkflowCard(label, detail, onClick) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "buddy-resource-card buddy-workflow-card";
+    card.style.width = "100%";
+    card.style.textAlign = "left";
+    card.style.cursor = "pointer";
+    card.style.font = "inherit";
+    const title = document.createElement("b");
+    title.textContent = label;
+    const description = document.createElement("span");
+    description.textContent = detail;
+    card.append(title, description);
+    card.addEventListener("click", onClick);
+    resourceList.appendChild(card);
+    resourcePanel.classList.remove("hidden");
+    return card;
+  }
+
+  function stopWorkflowPolling() {
+    if (workflow.statusTimer) clearInterval(workflow.statusTimer);
+    workflow.statusTimer = null;
+  }
+
+  async function postWorkflowAction(action, payload = {}) {
+    if (!sessionMeta.contactId || !sessionMeta.sessionId || !sessionMeta.workflowToken) {
+      throw new Error("This video room is not linked to a lead");
+    }
+    const response = await fetch("/api/video/action", {
+      method:"POST",
+      headers:{ "content-type":"application/json", "accept":"application/json" },
+      body:JSON.stringify({ ...sessionMeta, action, ...payload }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data?.ok === false) throw new Error(data?.error || "Buddy workflow action failed");
+    return data;
+  }
+
+  async function sendWorkflowUpdate(message) {
+    if (!room || !message) return;
+    try {
+      await room.localParticipant.sendText(`[BUDDY WORKFLOW] ${message}`, { topic:"lk.chat" });
+    } catch (error) {
+      console.warn("Buddy: workflow update failed", error);
+    }
+  }
+
+  function productChoiceFromText(text) {
+    const value = String(text || "").toLowerCase();
+    if (/\b(first|one|option\s*1|number\s*1|#1)\b/.test(value)) return 0;
+    if (/\b(second|two|option\s*2|number\s*2|#2)\b/.test(value)) return 1;
+    return workflow.productOptions.findIndex((option) => {
+      const words = String(option?.name || "").toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 3);
+      return words.some((word) => value.includes(word));
+    });
+  }
+
+  function deliveryChoiceFromText(text) {
+    const value = String(text || "").toLowerCase();
+    if (/\b(first|one|option\s*1|number\s*1|#1)\b/.test(value)) return 0;
+    if (/\b(second|two|option\s*2|number\s*2|#2)\b/.test(value)) return 1;
+    if (/\b(third|three|option\s*3|number\s*3|#3)\b/.test(value)) return 2;
+    return workflow.deliveryOptions.findIndex((option) => value.includes(String(option?.label || "").toLowerCase()));
+  }
+
+  async function chooseDelivery(optionIndex) {
+    if (workflow.phase !== "awaiting-delivery" || workflow.busy) return;
+    workflow.busy = true;
+    clearWorkflowCards();
+    try {
+      const result = await postWorkflowAction("delivery-schedule", { optionIndex });
+      const label = result?.delivery?.label || workflow.deliveryOptions[optionIndex]?.label || "your selected time";
+      workflow.phase = "complete";
+      addBubble(`Delivery scheduled for ${label}. A confirmation was sent by text and email.`, "system");
+      if (result?.delivery?.htmlLink) addResource(result.delivery.htmlLink);
+      await sendWorkflowUpdate(`Delivery scheduling succeeded for ${label}. Confirm it warmly and say goodbye.`);
+      stopWorkflowPolling();
+    } catch (error) {
+      workflow.phase = "awaiting-delivery";
+      addBubble(error instanceof Error ? error.message : "Delivery scheduling failed.", "system");
+      renderDeliveryChoices();
+    } finally {
+      workflow.busy = false;
+    }
+  }
+
+  function renderDeliveryChoices() {
+    clearWorkflowCards();
+    workflow.deliveryOptions.forEach((option, index) => {
+      addWorkflowCard(`${index + 1}. ${option.label}`, "Schedule this delivery window", () => void chooseDelivery(index));
+    });
+  }
+
+  async function loadDeliveryChoices() {
+    if (workflow.phase === "awaiting-delivery" || workflow.phase === "complete" || workflow.busy) return;
+    workflow.busy = true;
+    try {
+      const result = await postWorkflowAction("delivery-options");
+      workflow.deliveryOptions = Array.isArray(result?.options) ? result.options : [];
+      if (!workflow.deliveryOptions.length) throw new Error("No delivery windows are available right now");
+      workflow.phase = "awaiting-delivery";
+      renderDeliveryChoices();
+      const labels = workflow.deliveryOptions.map((option, index) => `${index + 1}) ${option.label}`).join("; ");
+      addBubble(`Agreement signed. Choose a delivery window: ${labels}`, "system");
+      await sendWorkflowUpdate(`The agreement is signed. Present these delivery choices: ${labels}. Ask the customer to choose one.`);
+      stopWorkflowPolling();
+    } catch (error) {
+      addBubble(error instanceof Error ? error.message : "Delivery choices are unavailable.", "system");
+    } finally {
+      workflow.busy = false;
+    }
+  }
+
+  async function checkWorkflowStatus() {
+    if (workflow.phase !== "awaiting-signature" || workflow.busy) return;
+    try {
+      const status = await postWorkflowAction("contact-status");
+      if (/signed/i.test(String(status?.documentStatus || ""))) await loadDeliveryChoices();
+    } catch (error) {
+      console.warn("Buddy: workflow status failed", error);
+    }
+  }
+
+  function startSignaturePolling() {
+    stopWorkflowPolling();
+    workflow.statusTimer = setInterval(() => void checkWorkflowStatus(), 4000);
+    void checkWorkflowStatus();
+  }
+
+  async function chooseProduct(optionIndex) {
+    if (workflow.phase !== "awaiting-product" || workflow.busy) return;
+    const option = workflow.productOptions[optionIndex];
+    if (!option) return;
+    workflow.busy = true;
+    clearWorkflowCards();
+    try {
+      const result = await postWorkflowAction("product-selected", { optionIndex });
+      workflow.phase = "awaiting-signature";
+      const signingUrl = result?.docusign?.shortSigningUrl || "";
+      addBubble(`${option.name} selected. The DocuSign agreement was sent to your phone and email. Please sign it so we can schedule delivery.`, "system");
+      if (signingUrl) addResource(signingUrl);
+      await sendWorkflowUpdate(`Product selection succeeded for ${option.name}. The DocuSign agreement was sent. Ask the customer to sign it, then wait for confirmation.`);
+      startSignaturePolling();
+    } catch (error) {
+      workflow.phase = "awaiting-product";
+      addBubble(error instanceof Error ? error.message : "Product selection failed.", "system");
+      renderProductChoices();
+    } finally {
+      workflow.busy = false;
+    }
+  }
+
+  function renderProductChoices() {
+    clearWorkflowCards();
+    workflow.productOptions.forEach((option, index) => {
+      addWorkflowCard(`${index + 1}. ${option.name}`, "Select this option and send DocuSign", () => void chooseProduct(index));
+    });
+  }
+
+  function prepareWorkflow(nextWorkflow) {
+    workflow.productOptions = Array.isArray(nextWorkflow?.productOptions) ? nextWorkflow.productOptions.slice(0, 2) : [];
+    if (!sessionMeta.workflowToken || workflow.productOptions.length !== 2) return;
+    workflow.phase = "awaiting-product";
+    renderProductChoices();
+  }
+
+  function handleCustomerWorkflowMessage(text) {
+    if (workflow.phase === "awaiting-product") {
+      const choice = productChoiceFromText(text);
+      if (choice >= 0) void chooseProduct(choice);
+    } else if (workflow.phase === "awaiting-delivery") {
+      const choice = deliveryChoiceFromText(text);
+      if (choice >= 0) void chooseDelivery(choice);
+    }
   }
 
   function addBubble(text, sender = "buddy") {
@@ -232,6 +413,10 @@
         const role = participantInfo?.identity === nextRoom.localParticipant.identity ? "customer" : "buddy";
         rememberTranscript(role, message, segmentId);
         if (role === "buddy") addBubble(message, "buddy");
+        else {
+          addBubble(message, "user");
+          handleCustomerWorkflowMessage(message);
+        }
       } catch (error) {
         console.warn("Buddy: transcription stream failed", error);
       }
@@ -302,6 +487,7 @@
         contactId:String(data.contactId || pendingContext.contactId || ""),
         room:String(data.room || ""),
         sessionId:String(data.dispatchId || data.sessionId || data.room || ""),
+        workflowToken:String(data.workflowToken || ""),
       };
 
       await connectLiveKit(livekitUrl, token);
@@ -312,6 +498,7 @@
       if (!ready) {
         throw new Error("The room opened, but Buddy's avatar worker did not join. Please try again.");
       }
+      prepareWorkflow(data.workflow || {});
       return room;
     })();
 
@@ -364,8 +551,11 @@
     remoteVideoElement = null;
     remoteAudioElements.forEach((node) => node.remove());
     remoteAudioElements.clear();
-    sessionMeta = { contactId:"", room:"", sessionId:"" };
+    stopWorkflowPolling();
+    clearWorkflowCards();
+    sessionMeta = { contactId:"", room:"", sessionId:"", workflowToken:"" };
     sessionTranscript = [];
+    workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null };
     closing = false;
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
@@ -387,6 +577,7 @@
       await ensureSession();
       await room.localParticipant.sendText(text, { topic:"lk.chat" });
       rememberTranscript("customer", text);
+      handleCustomerWorkflowMessage(text);
     } catch (error) {
       addBubble(error instanceof Error ? error.message : "Buddy messaging is unavailable.", "system");
     } finally {
