@@ -18,6 +18,7 @@ const logger = require("../../../shared/logger");
 let d1Binding = null;
 let cache = null;
 let dirty = false;
+let loadedIds = {};
 
 const TABLE_MAP = {
   contacts: "contacts",
@@ -85,6 +86,7 @@ async function load(binding) {
   for (const [logicalName, tableName] of Object.entries(TABLE_MAP)) {
     const rows = await db.prepare(`SELECT data FROM ${tableName} ORDER BY created_at DESC`).all();
     result[logicalName] = (rows.results || []).map((r) => JSON.parse(r.data));
+    loadedIds[logicalName] = new Set(result[logicalName].map((record) => record?.id).filter(Boolean));
   }
 
   // Settings is stored as array but exposed as single object
@@ -106,25 +108,37 @@ async function flush() {
   const stmts = [];
 
   for (const [logicalName, tableName] of Object.entries(TABLE_MAP)) {
-    stmts.push(db.prepare(`DELETE FROM ${tableName}`));
-
     let records;
     if (logicalName === "settings") {
-      const s = cache.settings || normalizeSettings({});
-      s.id = s.id || "default";
-      records = [s];
+      const settings = cache.settings || normalizeSettings({});
+      settings.id = settings.id || "default";
+      records = [settings];
     } else {
       records = cache[logicalName];
     }
     if (!Array.isArray(records)) continue;
 
+    const currentIds = new Set();
     for (const record of records) {
       const id = record.id || `auto_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      currentIds.add(id);
       stmts.push(
-        db.prepare(`INSERT INTO ${tableName} (id, data, created_at, updated_at) VALUES (?, ?, ?, ?)`)
-          .bind(id, JSON.stringify(record), record.createdAt || new Date().toISOString(), new Date().toISOString())
+        db.prepare(`INSERT INTO ${tableName} (id, data, created_at, updated_at)
+          VALUES (?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            data = excluded.data,
+            updated_at = excluded.updated_at`)
+          .bind(id, JSON.stringify({ ...record, id }), record.createdAt || new Date().toISOString(), new Date().toISOString())
       );
     }
+
+    // Delete only records that this request actually loaded and intentionally
+    // removed. Never truncate a whole table: concurrent requests may have
+    // inserted records after this request's snapshot was read.
+    for (const id of loadedIds[logicalName] || []) {
+      if (!currentIds.has(id)) stmts.push(db.prepare(`DELETE FROM ${tableName} WHERE id = ?`).bind(id));
+    }
+    loadedIds[logicalName] = currentIds;
   }
 
   await db.batch(stmts);
@@ -170,6 +184,7 @@ function isDirty() {
 function reset() {
   cache = null;
   dirty = false;
+  loadedIds = {};
 }
 
 module.exports = { setDb, load, flush, readDb, writeDb, mutate, isDirty, reset };

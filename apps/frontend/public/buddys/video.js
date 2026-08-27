@@ -25,6 +25,8 @@
   const remoteAudioElements = new Set();
   const renderedTranscriptions = new Set();
   const sharedUrls = new Set();
+  let sessionMeta = { contactId:"", room:"", sessionId:"" };
+  let sessionTranscript = [];
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -98,6 +100,41 @@
     chatStream.appendChild(bubble);
     chatStream.scrollTop = chatStream.scrollHeight;
     urlsIn(message).forEach(addResource);
+  }
+
+  function rememberTranscript(role, text, segmentId = "") {
+    const message = String(text || "").trim();
+    if (!message) return;
+    const id = String(segmentId || `${role}:${Date.now()}:${sessionTranscript.length}`);
+    if (sessionTranscript.some((entry) => entry.segmentId === id)) return;
+    sessionTranscript.push({
+      role:role === "customer" ? "customer" : "buddy",
+      text:message.slice(0, 4000),
+      segmentId:id.slice(0, 240),
+      at:Date.now(),
+    });
+    if (sessionTranscript.length > 100) sessionTranscript = sessionTranscript.slice(-100);
+  }
+
+  async function persistVideoSession(ended = false) {
+    if (!sessionMeta.contactId || !sessionMeta.sessionId) return;
+    const payload = {
+      ...sessionMeta,
+      ended,
+      messages:sessionTranscript,
+      source:pendingContext.source || "buddy-web",
+    };
+    try {
+      const response = await fetch("/api/video/transcript", {
+        method:"POST",
+        headers:{ "content-type":"application/json", "accept":"application/json" },
+        body:JSON.stringify(payload),
+        keepalive:ended,
+      });
+      if (!response.ok) console.warn("Buddy: transcript persistence failed", response.status);
+    } catch (error) {
+      console.warn("Buddy: transcript persistence failed", error);
+    }
   }
 
   function showWorkspace(context = {}, startVideo = false) {
@@ -190,10 +227,11 @@
         const isFinal = attributes["lk.transcription_final"];
         const segmentId = attributes["lk.segment_id"] || reader.info?.id || `${participantInfo?.identity || "remote"}:${message}`;
         if (!message || isFinal === "false") return;
-        if (participantInfo?.identity === nextRoom.localParticipant.identity) return;
         if (renderedTranscriptions.has(segmentId)) return;
         renderedTranscriptions.add(segmentId);
-        addBubble(message, "buddy");
+        const role = participantInfo?.identity === nextRoom.localParticipant.identity ? "customer" : "buddy";
+        rememberTranscript(role, message, segmentId);
+        if (role === "buddy") addBubble(message, "buddy");
       } catch (error) {
         console.warn("Buddy: transcription stream failed", error);
       }
@@ -259,6 +297,13 @@
       const token = data.token || data.accessToken || data.access_token;
       if (!livekitUrl || !token) throw new Error("Video broker returned no LiveKit URL or token");
 
+      sessionTranscript = [];
+      sessionMeta = {
+        contactId:String(data.contactId || pendingContext.contactId || ""),
+        room:String(data.room || ""),
+        sessionId:String(data.dispatchId || data.sessionId || data.room || ""),
+      };
+
       await connectLiveKit(livekitUrl, token);
       setChatState("Waiting for Buddy…");
       setStatus("Room connected — waiting for Buddy to join…");
@@ -309,6 +354,7 @@
 
   async function closeWorkspace() {
     closing = true;
+    await persistVideoSession(true);
     try { if (room) await room.disconnect(); } catch {}
     room = null;
     sessionPromise = null;
@@ -318,6 +364,8 @@
     remoteVideoElement = null;
     remoteAudioElements.forEach((node) => node.remove());
     remoteAudioElements.clear();
+    sessionMeta = { contactId:"", room:"", sessionId:"" };
+    sessionTranscript = [];
     closing = false;
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
@@ -338,6 +386,7 @@
     try {
       await ensureSession();
       await room.localParticipant.sendText(text, { topic:"lk.chat" });
+      rememberTranscript("customer", text);
     } catch (error) {
       addBubble(error instanceof Error ? error.message : "Buddy messaging is unavailable.", "system");
     } finally {
@@ -356,6 +405,10 @@
     if (room) await room.localParticipant.setMicrophoneEnabled(micEnabled);
     micButton.textContent = micEnabled ? "🎙" : "🔇";
     micButton.setAttribute("aria-label", micEnabled ? "Mute microphone" : "Unmute microphone");
+  });
+
+  window.addEventListener("pagehide", () => {
+    if (room && sessionMeta.contactId) void persistVideoSession(true);
   });
 
   closeButton.addEventListener("click", closeWorkspace);

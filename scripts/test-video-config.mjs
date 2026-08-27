@@ -84,5 +84,31 @@ assert.equal(rejected.status, 502);
 assert.match(rejectedBody.error, /voice 'buddy' is not available/);
 assert.equal(videoCalledWithoutVoice, false);
 
+let videoLeadSms = null;
+const videoLeadResponse = await worker.fetch(new Request("https://buddys.internal/internal/leads", {
+  method:"POST",
+  headers:{ "content-type":"application/json", "x-internal-call-secret":"test-internal-secret" },
+  body:JSON.stringify({
+    contact:{ firstName:"Sam", phone:"+15550000001", smsConsent:true },
+    lead:{ contact_method:"Video", consent:true, product_interest:"living room" },
+  }),
+}), {
+  INTERNAL_CALL_SECRET:"test-internal-secret",
+  SMS:{
+    async fetch(request) {
+      videoLeadSms = await request.json();
+      return Response.json({ ok:true, providerMessageId:"sms-video-lead" });
+    },
+  },
+}, { waitUntil() {} });
+
+const videoLeadBody = await videoLeadResponse.json();
+assert.equal(videoLeadResponse.status, 200);
+assert.equal(videoLeadBody.contactFlow, "video-room-plus-sms");
+assert.equal(videoLeadBody.results.sms.ok, true);
+assert.equal(videoLeadSms.messageType, "buddy-video-welcome");
+assert.match(videoLeadSms.message, /reply CALL/i);
+
 console.log("Buddy image-avatar video payload: OK");
 console.log("Buddy missing-voice preflight: OK");
+console.log("Buddy video lead SMS follow-up: OK");

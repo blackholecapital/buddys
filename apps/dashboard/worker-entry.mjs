@@ -23,6 +23,19 @@ import campaignSendJob from "./worker/jobs/campaign-send/index.js";
 import followupCheckJob from "./worker/jobs/followup-check/index.js";
 
 let memoryBackendSet = false;
+let persistenceTail = Promise.resolve();
+
+async function withPersistenceLock(work) {
+  const previous = persistenceTail;
+  let release;
+  persistenceTail = new Promise((resolve) => { release = resolve; });
+  await previous;
+  try {
+    return await work();
+  } finally {
+    release();
+  }
+}
 
 async function initPersistence(workerEnv) {
   if (workerEnv.DB) {
@@ -65,6 +78,7 @@ function jsonResponse(status, payload, correlationId, requestId) {
 
 export default {
   async fetch(request, workerEnv, ctx) {
+    return withPersistenceLock(async () => {
     env.setBindings(workerEnv);
     await initPersistence(workerEnv);
     initQueue(workerEnv);
@@ -114,11 +128,13 @@ export default {
       }
     });
 
-    if (d1Cached.isDirty() && workerEnv.DB) ctx.waitUntil(d1Cached.flush());
+    if (d1Cached.isDirty() && workerEnv.DB) await d1Cached.flush();
     return response;
+    });
   },
 
   async queue(batch, workerEnv, ctx) {
+    return withPersistenceLock(async () => {
     env.setBindings(workerEnv);
     await initPersistence(workerEnv);
 
@@ -144,5 +160,6 @@ export default {
     }
 
     if (d1Cached.isDirty() && workerEnv.DB) await d1Cached.flush();
+    });
   },
 };
