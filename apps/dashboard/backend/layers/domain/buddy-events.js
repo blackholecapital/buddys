@@ -23,6 +23,8 @@ function eventText(event = {}) {
 }
 
 function eventRole(event = {}) {
+  const explicitRole = String(event.role || "").toLowerCase();
+  if (explicitRole === "customer" || explicitRole === "buddy") return explicitRole;
   const type = String(event.type || "");
   if (type === "stt.transcript.final") return "customer";
   if (type.startsWith("buddy.") && event.response) return "buddy";
