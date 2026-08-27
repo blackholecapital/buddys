@@ -1,4 +1,4 @@
-const CHANNELS = ["sms", "email"];
+const CHANNELS = ["sms", "email", "video"];
 const ROLES = ["admin", "agent", "viewer"];
 
 function nowIso() {
