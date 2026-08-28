@@ -34,7 +34,7 @@ module.exports = async function handler({ method, body, env }) {
   const conversation = transcript.length
     ? conversations.findOrCreate({
         contactId,
-        campaignId:sessionId,
+        campaignId:null,
         channel:"video",
         subject:"Buddy live video",
       })
@@ -43,13 +43,16 @@ module.exports = async function handler({ method, body, env }) {
   const current = readDb();
   const existingIds = new Set(
     (current.messages || [])
-      .filter((message) => message.conversationId === conversation?.id)
+      .filter((message) => message.contactId === contactId && message.channel === "video")
       .map((message) => message.providerMessageId)
       .filter(Boolean),
   );
   const newMessages = [];
 
   for (const entry of transcript) {
+    if (existingIds.has(entry.segmentId)) continue;
+    existingIds.add(entry.segmentId);
+
     const event = {
       type:"video.transcript.final",
       role:entry.role,
@@ -62,9 +65,6 @@ module.exports = async function handler({ method, body, env }) {
       source:"buddy-livekit-web",
     };
     await buddyEvents.record(env.BUDDY_DB, event);
-
-    if (existingIds.has(entry.segmentId)) continue;
-    existingIds.add(entry.segmentId);
     newMessages.push(normalizeMessage({
       contactId,
       campaignId:sessionId,

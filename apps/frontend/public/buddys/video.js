@@ -27,7 +27,8 @@
   const sharedUrls = new Set();
   let sessionMeta = { contactId:"", room:"", sessionId:"", workflowToken:"" };
   let sessionTranscript = [];
-  let workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null };
+  let transcriptTimer = null;
+  let workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null, resumePrompt:"", announced:false };
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -257,9 +258,44 @@
 
   function prepareWorkflow(nextWorkflow) {
     workflow.productOptions = Array.isArray(nextWorkflow?.productOptions) ? nextWorkflow.productOptions.slice(0, 2) : [];
-    if (!sessionMeta.workflowToken || workflow.productOptions.length !== 2) return;
-    workflow.phase = "awaiting-product";
-    renderProductChoices();
+    workflow.resumePrompt = String(nextWorkflow?.resumePrompt || "").trim();
+    workflow.announced = false;
+    if (!sessionMeta.workflowToken) return;
+
+    const phase = String(nextWorkflow?.phase || "awaiting-product");
+    if (phase === "complete") {
+      workflow.phase = "complete";
+      const deliveryAt = String(nextWorkflow?.deliveryAt || "").trim();
+      addBubble(deliveryAt ? `This lead already has delivery scheduled for ${new Date(deliveryAt).toLocaleString()}.` : "This lead's delivery is already scheduled.", "system");
+      if (nextWorkflow?.calendarEventUrl) addResource(nextWorkflow.calendarEventUrl);
+      return;
+    }
+    if (phase === "awaiting-delivery") {
+      workflow.phase = "resuming-delivery";
+      return;
+    }
+    if (phase === "awaiting-signature") {
+      workflow.phase = "awaiting-signature";
+      const product = String(nextWorkflow?.selectedProduct || "the selected item");
+      addBubble(`${product} is already selected and the DocuSign agreement has already been sent.`, "system");
+      if (nextWorkflow?.signingUrl) addResource(nextWorkflow.signingUrl);
+      startSignaturePolling();
+      return;
+    }
+    if (workflow.productOptions.length === 2) {
+      workflow.phase = "awaiting-product";
+      renderProductChoices();
+    }
+  }
+
+  async function announceWorkflowState() {
+    if (!workflow.resumePrompt || workflow.announced || !agentReady) return;
+    workflow.announced = true;
+    await sendWorkflowUpdate(workflow.resumePrompt);
+    if (workflow.phase === "resuming-delivery") {
+      workflow.phase = "idle";
+      await loadDeliveryChoices();
+    }
   }
 
   function handleCustomerWorkflowMessage(text) {
@@ -283,7 +319,7 @@
     urlsIn(message).forEach(addResource);
   }
 
-  function rememberTranscript(role, text, segmentId = "") {
+  function rememberTranscript(role, text, segmentId = "", shouldPersist = true) {
     const message = String(text || "").trim();
     if (!message) return;
     const id = String(segmentId || `${role}:${Date.now()}:${sessionTranscript.length}`);
@@ -295,6 +331,18 @@
       at:Date.now(),
     });
     if (sessionTranscript.length > 100) sessionTranscript = sessionTranscript.slice(-100);
+    if (shouldPersist) scheduleTranscriptPersistence();
+  }
+
+  function renderTranscriptHistory(messages = []) {
+    if (!Array.isArray(messages) || !messages.length) return;
+    chatStream.replaceChildren();
+    sessionTranscript = [];
+    for (const entry of messages) {
+      rememberTranscript(entry.role, entry.text, entry.segmentId, false);
+      addBubble(entry.text, entry.role === "customer" ? "user" : "buddy");
+    }
+    addBubble("Previous conversation restored. Buddy will continue where you left off.", "system");
   }
 
   async function persistVideoSession(ended = false) {
@@ -316,6 +364,15 @@
     } catch (error) {
       console.warn("Buddy: transcript persistence failed", error);
     }
+  }
+
+  function scheduleTranscriptPersistence() {
+    if (!sessionMeta.contactId || !sessionMeta.sessionId) return;
+    if (transcriptTimer) clearTimeout(transcriptTimer);
+    transcriptTimer = setTimeout(() => {
+      transcriptTimer = null;
+      void persistVideoSession(false);
+    }, 600);
   }
 
   function showWorkspace(context = {}, startVideo = false) {
@@ -489,6 +546,7 @@
         sessionId:String(data.dispatchId || data.sessionId || data.room || ""),
         workflowToken:String(data.workflowToken || ""),
       };
+      renderTranscriptHistory(data?.history?.messages || []);
 
       await connectLiveKit(livekitUrl, token);
       setChatState("Waiting for Buddy…");
@@ -527,6 +585,7 @@
       if (typeof room.startAudio === "function") await room.startAudio().catch(() => {});
       if (remoteVideoElement) mount.replaceChildren(remoteVideoElement);
       else renderPlaceholder("Buddy joined — waiting for video…", "You can keep messaging while the avatar starts");
+      await announceWorkflowState();
       setConnect("Video Connected", true);
       setStatus(remoteVideoElement ? "Live with Buddy" : "Buddy joined — waiting for video…");
       setChatState("Live video connected");
@@ -541,6 +600,8 @@
 
   async function closeWorkspace() {
     closing = true;
+    if (transcriptTimer) clearTimeout(transcriptTimer);
+    transcriptTimer = null;
     await persistVideoSession(true);
     try { if (room) await room.disconnect(); } catch {}
     room = null;
@@ -555,7 +616,7 @@
     clearWorkflowCards();
     sessionMeta = { contactId:"", room:"", sessionId:"", workflowToken:"" };
     sessionTranscript = [];
-    workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null };
+    workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null, resumePrompt:"", announced:false };
     closing = false;
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");

@@ -4,6 +4,23 @@ const { readDb } = require("../../../layers/core/db");
 const { conciergePost } = require("../../../../shared/services/concierge");
 const rateLimits = require("../../../layers/domain/rateLimits");
 
+function videoHistory(contactId) {
+  if (!contactId) return { messages:[] };
+  const db = readDb();
+  const messages = (db.messages || [])
+    .filter((message) => message?.contactId === contactId && message?.channel === "video")
+    .sort((left, right) => String(left.createdAt || "").localeCompare(String(right.createdAt || "")))
+    .slice(-60)
+    .map((message) => ({
+      role:message.direction === "inbound" ? "customer" : "buddy",
+      text:String(message.body || "").slice(0, 4000),
+      segmentId:String(message.providerMessageId || message.id || "").slice(0, 240),
+      at:new Date(message.createdAt || Date.now()).getTime(),
+    }))
+    .filter((message) => message.text);
+  return { messages };
+}
+
 function base64url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -72,6 +89,7 @@ module.exports = async function handler({ method, body, env }) {
     return {
       ok:true,
       ...result,
+      history:videoHistory(contactId),
       workflowToken:await workflowToken(env.INTERNAL_CALL_SECRET, contactId, sessionId),
     };
   } catch (error) {
