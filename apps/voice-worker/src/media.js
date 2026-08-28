@@ -58,6 +58,7 @@ export function handleTwilioMediaSocket(request,env,ctx){
     mediaChunks:0,mediaBytes:0,lastTimestamp:"",lastSequenceNumber:"",transcriptCount:0,stt:null,utteranceParts:[],turnGeneration:0,responseCount:0,
     selectedProduct:null,documentStatus:"Not sent",signatureAcknowledged:false,deliveryOptions:[],awaitingDeliveryChoice:false,deliveryScheduled:false,
     optionsOffered:false,awaitingProductChoice:false,lastUtterance:"",lastUtteranceAt:0,lastClarifyAt:0,lastPendingDocPromptAt:0,
+    readyPromise:Promise.resolve(),
   };
   const pushEvent=(e)=>{const p=emitEvent(env,e);if(ctx?.waitUntil)ctx.waitUntil(p);else p.catch(()=>{});};
   const sendTwilioClear=()=>{if(state.streamSid)try{server.send(JSON.stringify({event:"clear",streamSid:state.streamSid}));}catch{}};
@@ -79,11 +80,52 @@ export function handleTwilioMediaSocket(request,env,ctx){
     const dup=n===state.lastUtterance && now-state.lastUtteranceAt<2500; state.lastUtterance=n; state.lastUtteranceAt=now; return dup;
   }
 
+  async function restoreAndOpenCall(){
+    const generation=++state.turnGeneration;
+    const options=getBuddyDemoOptions(state.interest);
+    const status=await getContactStatus(env,state.contactId);
+    const selectedName=String(status?.selectedProduct||"").trim();
+    if(selectedName){
+      state.selectedProduct=options.find(option=>option.name===selectedName)||{id:"restored-selection",name:selectedName,category:state.interest};
+    }
+    if(status?.documentStatus)state.documentStatus=status.documentStatus;
+    state.deliveryScheduled=Boolean(status?.deliveryAt)||["scheduled","completed"].includes(String(status?.deliveryStatus||"").trim().toLowerCase());
+
+    if(state.deliveryScheduled){
+      await speak(`Welcome back${state.firstName?`, ${state.firstName}`:""}. Your delivery is already scheduled. Thanks for calling Buddy's. Have a great day.`,generation,"buddy.call.resumed-complete");
+      if(ctx?.waitUntil)ctx.waitUntil((async()=>{await sleep(10000);await completeTwilioCall(env,state.callSid);})());
+      return;
+    }
+    if(state.selectedProduct&&/signed|completed/i.test(String(state.documentStatus))){
+      try{
+        const delivery=await getDeliveryOptions(env,state.contactId);
+        state.deliveryOptions=delivery?.options||[];
+        state.awaitingDeliveryChoice=state.deliveryOptions.length>0;
+        state.signatureAcknowledged=true;
+        await speak(`Welcome back${state.firstName?`, ${state.firstName}`:""}. Your agreement for the ${state.selectedProduct.name} is signed. ${describeDeliveryOptions(state.deliveryOptions)}`,generation,"buddy.call.resumed-delivery");
+      }catch(error){
+        console.error("Buddy resume delivery options failed",{contactId:state.contactId,error:error?.message||String(error)});
+        await speak("Welcome back. Your agreement is signed, but I can't load the delivery calendar right now.",generation,"buddy.delivery.options-failed");
+      }
+      return;
+    }
+    if(state.selectedProduct){
+      await speak(`Welcome back${state.firstName?`, ${state.firstName}`:""}. You selected the ${state.selectedProduct.name}, and your agreement was already sent. Have you signed it yet?`,generation,"buddy.call.resumed-signature");
+      return;
+    }
+
+    state.optionsOffered=true;
+    state.awaitingProductChoice=options.length>0;
+    await speak(offerText(options),generation,"buddy.product.options-offered");
+  }
+
   function processUtterance(transcript){
     const clean=String(transcript||"").trim(); if(!clean||!state.streamSid||duplicateUtterance(clean))return;
     const generation=++state.turnGeneration; const startedAt=Date.now();
     const work=(async()=>{
       try{
+        await state.readyPromise;
+        if(generation!==state.turnGeneration)return;
         pushEvent({type:"buddy.turn.started",callSid:state.callSid,streamSid:state.streamSid,contactId:state.contactId,transcript:clean});
         const options=getBuddyDemoOptions(state.interest);
 
@@ -168,7 +210,7 @@ export function handleTwilioMediaSocket(request,env,ctx){
     if(type==="connected"){console.log("Twilio media connected",{protocol:message.protocol||"",version:message.version||""});return;}
     if(type==="start"){
       const start=message.start||{},params=start.customParameters||{};state.streamSid=String(start.streamSid||message.streamSid||"");state.callSid=String(start.callSid||"");state.accountSid=String(start.accountSid||"");state.contactId=String(params.contactId||"");state.firstName=String(params.firstName||"");state.lastName=String(params.lastName||"");state.phone=String(params.phone||"");state.email=String(params.email||"");state.interest=String(params.interest||"");state.location=String(params.location||"");state.comments=String(params.comments||"");state.leadScore=String(params.leadScore||"");state.preferredContactTime=String(params.preferredContactTime||"");const f=start.mediaFormat||{};
-      console.log("Twilio media stream started",{streamSid:state.streamSid,callSid:state.callSid,contactId:state.contactId,encoding:f.encoding||"",sampleRate:f.sampleRate||"",channels:f.channels||"",sttConfigured:Boolean(env.DEEPGRAM_API_KEY),buddyRuntimeConfigured:Boolean(env.BUDDY_RUNTIME_URL&&env.BUDDY_RUNTIME_TOKEN),premiumTtsConfigured:Boolean(env.OPENAI_API_KEY),demoChoices:getBuddyDemoOptions(state.interest).length});pushEvent({type:"stream.media.started",streamSid:state.streamSid,callSid:state.callSid,contactId:state.contactId,firstName:state.firstName,interest:state.interest,location:state.location,leadScore:state.leadScore,encoding:String(f.encoding||""),sampleRate:Number(f.sampleRate||0),channels:Number(f.channels||0)});startTranscription();return;
+      console.log("Twilio media stream started",{streamSid:state.streamSid,callSid:state.callSid,contactId:state.contactId,encoding:f.encoding||"",sampleRate:f.sampleRate||"",channels:f.channels||"",sttConfigured:Boolean(env.DEEPGRAM_API_KEY),buddyRuntimeConfigured:Boolean(env.BUDDY_RUNTIME_URL&&env.BUDDY_RUNTIME_TOKEN),premiumTtsConfigured:Boolean(env.OPENAI_API_KEY),demoChoices:getBuddyDemoOptions(state.interest).length});pushEvent({type:"stream.media.started",streamSid:state.streamSid,callSid:state.callSid,contactId:state.contactId,firstName:state.firstName,interest:state.interest,location:state.location,leadScore:state.leadScore,encoding:String(f.encoding||""),sampleRate:Number(f.sampleRate||0),channels:Number(f.channels||0)});startTranscription();state.readyPromise=restoreAndOpenCall().catch(error=>{console.error("Buddy call opening failed",{contactId:state.contactId,error:error?.message||String(error)});pushEvent({type:"buddy.call.opening-failed",callSid:state.callSid,streamSid:state.streamSid,contactId:state.contactId,error:error?.message||String(error)});});return;
     }
     if(type==="media"){const media=message.media||{},payload=String(media.payload||"");state.mediaChunks+=1;state.mediaBytes+=base64ByteLength(payload);state.lastTimestamp=String(media.timestamp||state.lastTimestamp||"");if(payload&&state.stt)state.stt.sendBase64(payload);if(state.mediaChunks%250===0)console.log("Twilio media heartbeat",{streamSid:state.streamSid,callSid:state.callSid,contactId:state.contactId,mediaChunks:state.mediaChunks,mediaBytes:state.mediaBytes,timestamp:state.lastTimestamp,transcriptCount:state.transcriptCount,responseCount:state.responseCount});return;}
     if(type==="dtmf"){pushEvent({type:"stream.media.dtmf",streamSid:state.streamSid,callSid:state.callSid,contactId:state.contactId,digit:String(message.dtmf?.digit||"")});return;}

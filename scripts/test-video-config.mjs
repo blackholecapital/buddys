@@ -37,28 +37,54 @@ const response = await worker.fetch(new Request("https://buddys.internal/interna
   headers:{ "content-type":"application/json", "x-internal-call-secret":"test-internal-secret" },
   body:JSON.stringify({ source:"direct", context:{ interest:"TVs", location:"Orlando" } }),
 }), env, { waitUntil() {} });
+const initialForwarded = forwarded;
+
+const resumeResponse = await worker.fetch(new Request("https://buddys.internal/internal/video/session", {
+  method:"POST",
+  headers:{ "content-type":"application/json", "x-internal-call-secret":"test-internal-secret" },
+  body:JSON.stringify({
+    source:"lead-resume",
+    contact:{
+      id:"contact-resume",
+      firstName:"Sam",
+      interest:"Smartphones",
+      selectedProduct:"Apple iPhone 16 Pro",
+      documentStatus:"Sent",
+      docusignEnvelopeId:"envelope-1",
+      signingShortUrl:"https://example.com/sign",
+    },
+  }),
+}), env, { waitUntil() {} });
 
 globalThis.fetch = originalFetch;
 
 assert.equal(response.status, 200);
-assert.equal(forwarded.product, "buddys-personal-shopper");
-assert.equal(forwarded.avatarProvider, "lemonslice");
-assert.equal(forwarded.avatarSource, "image-url");
-assert.equal(forwarded.avatarImageUrl, "https://buddys.pages.dev/buddys/images/buddy-avatar.jpg");
-assert.equal(forwarded.lemonsliceAgentId, "");
-assert.equal(forwarded.voiceProvider, "eila-runtime");
-assert.equal(forwarded.voiceId, "buddy");
-assert.match(forwarded.instructions, /Interest: TVs/);
-assert.match(forwarded.instructions, /Area: Orlando/);
-assert.match(forwarded.instructions, /65-inch OLED 4K Smart TV/);
-assert.match(forwarded.instructions, /75-inch QLED 4K Smart TV/);
-assert.match(forwarded.instructions, /\[BUDDY WORKFLOW\]/);
+assert.equal(initialForwarded.product, "buddys-personal-shopper");
+assert.equal(initialForwarded.avatarProvider, "lemonslice");
+assert.equal(initialForwarded.avatarSource, "image-url");
+assert.equal(initialForwarded.avatarImageUrl, "https://buddys.pages.dev/buddys/images/buddy-avatar.jpg");
+assert.equal(initialForwarded.lemonsliceAgentId, "");
+assert.equal(initialForwarded.voiceProvider, "eila-runtime");
+assert.equal(initialForwarded.voiceId, "buddy");
+assert.match(initialForwarded.instructions, /Interest: TVs/);
+assert.match(initialForwarded.instructions, /Area: Orlando/);
+assert.match(initialForwarded.instructions, /65-inch OLED 4K Smart TV/);
+assert.match(initialForwarded.instructions, /75-inch QLED 4K Smart TV/);
+assert.match(initialForwarded.instructions, /\[BUDDY WORKFLOW\]/);
 
 const body = await response.json();
 assert.equal(body.workflow.productOptions.length, 2);
 assert.equal(body.workflow.productOptions[0].id, "tv-65-oled");
+assert.equal(body.workflow.phase, "awaiting-product");
 assert.equal(body.runtime.voiceId, "buddy");
 assert.equal(body.runtime.llm.model, "qwen3.5:9b");
+
+const resumeBody = await resumeResponse.json();
+assert.equal(resumeResponse.status, 200);
+assert.equal(resumeBody.workflow.phase, "awaiting-signature");
+assert.equal(resumeBody.workflow.selectedProduct, "Apple iPhone 16 Pro");
+assert.equal(resumeBody.workflow.signingUrl, "https://example.com/sign");
+assert.match(resumeBody.workflow.resumePrompt, /already selected/i);
 
 let videoCalledWithoutVoice = false;
 globalThis.fetch = async (request) => {

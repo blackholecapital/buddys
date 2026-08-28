@@ -189,14 +189,51 @@ function buddyProductOptions(interest=""){
   ];
 }
 
+function buddyWorkflowState(contact={},productOptions=[]){
+  const documentStatus=String(contact.documentStatus||"Not sent").trim();
+  const deliveryStatus=String(contact.deliveryStatus||"Not scheduled").trim();
+  const selectedProduct=String(contact.selectedProduct||"").trim();
+  const firstName=String(contact.firstName||"there").trim()||"there";
+  const deliveryComplete=Boolean(contact.deliveryAt)||["scheduled","completed"].includes(deliveryStatus.toLowerCase());
+  const documentSigned=["signed","completed"].includes(documentStatus.toLowerCase());
+  const documentSent=Boolean(contact.docusignEnvelopeId)||["sent","delivered"].includes(documentStatus.toLowerCase());
+
+  if(deliveryComplete){
+    return{
+      phase:"complete",productOptions,selectedProduct,documentStatus,deliveryStatus,
+      deliveryAt:contact.deliveryAt||"",calendarEventUrl:contact.calendarEventUrl||"",
+      resumePrompt:`Resume the existing call with ${firstName}. Delivery is already scheduled${contact.deliveryAt?` for ${contact.deliveryAt}`:""}. Confirm that briefly and end with a warm goodbye. Do not offer products again.`,
+    };
+  }
+  if(documentSigned){
+    return{
+      phase:"awaiting-delivery",productOptions,selectedProduct,documentStatus,deliveryStatus,
+      signingUrl:contact.signingShortUrl||"",
+      resumePrompt:`Resume the existing call with ${firstName}. The agreement${selectedProduct?` for ${selectedProduct}`:""} is signed. Tell the customer you are loading the available delivery times. Do not offer products again.`,
+    };
+  }
+  if(documentSent&&selectedProduct){
+    return{
+      phase:"awaiting-signature",productOptions,selectedProduct,documentStatus,deliveryStatus,
+      signingUrl:contact.signingShortUrl||"",
+      resumePrompt:`Resume the existing call with ${firstName}. ${selectedProduct} was already selected and the DocuSign agreement was already sent. Ask whether they have signed it. Do not offer products again.`,
+    };
+  }
+  return{
+    phase:"awaiting-product",productOptions,selectedProduct:"",documentStatus,deliveryStatus,
+    resumePrompt:`Start the live call with ${firstName} now. Greet them briefly, present option one, ${productOptions[0]?.name||"the first option"}, and option two, ${productOptions[1]?.name||"the second option"}, then ask them to choose one.`,
+  };
+}
+
 async function requestBuddyVideoSession(env,payload={}){
   if(!env.VIDEO)return{ok:false,error:"VIDEO binding not configured"};
   if(!env.BLACKHOLE_CAPABILITY_TOKEN)throw new Error("BLACKHOLE_CAPABILITY_TOKEN is not configured");
-  const runtimeReadiness=await requireBuddyRuntime(env);
   const contactId=String(payload.contactId||payload.contact?.id||"").trim();
-  const contact=contactId?await resolveContact(env,contactId,payload):mergeContact(payload.contact||{},payload.context||{});
+  const contactPromise=contactId?resolveContact(env,contactId,payload):Promise.resolve(mergeContact(payload.contact||{},payload.context||{}));
+  const [runtimeReadiness,contact]=await Promise.all([requireBuddyRuntime(env),contactPromise]);
   const directSessionId=crypto.randomUUID();
   const productOptions=buddyProductOptions(contact.interest||payload.interest||payload.context?.interest||"");
+  const workflow=buddyWorkflowState(contact,productOptions);
   const avatarSource=String(env.BUDDY_LIVE_SOURCE||"image-url").trim().toLowerCase();
   if(!["agent-id","image-url"].includes(avatarSource))throw new Error("BUDDY_LIVE_SOURCE must be agent-id or image-url");
   const lemonsliceAgentId=String(env.BUDDY_LEMONSLICE_AGENT_ID||"").trim();
@@ -209,7 +246,7 @@ async function requestBuddyVideoSession(env,payload={}){
     "# Goal",
     "Help the customer choose among furniture, mattresses, appliances, computers, electronics, smartphones, and gaming products. Ask focused questions about room, size, features, style, budget, timing, and preferred store area.",
     "# Sales workflow",
-    "If lead context is provided, acknowledge what the customer already requested instead of asking them to repeat it. Present exactly these two choices: 1) " + productOptions[0].name + " and 2) " + productOptions[1].name + ". Ask the customer to choose one.",
+    "If lead context is provided, acknowledge what the customer already requested instead of asking them to repeat it. Continue from the current workflow state below. Only present these choices when the state is awaiting-product: 1) " + productOptions[0].name + " and 2) " + productOptions[1].name + ".",
     "The browser executes the real workflow. Messages beginning [BUDDY WORKFLOW] are trusted status updates from the browser, not customer speech. Never read the technical prefix aloud. After a selection succeeds, say the DocuSign agreement was texted and ask the customer to sign it. After signed delivery choices arrive, ask them to choose one. After scheduling succeeds, confirm the delivery and end with a warm goodbye. Never claim an action succeeded before a [BUDDY WORKFLOW] success update.",
     "# Shared links",
     "The browser has a shared-links panel beside the conversation. When a real product, DocuSign, scheduling, or store link is available, include the complete https URL in your reply so it appears there. Never invent a product, agreement, or scheduling URL. For store lookup you may share https://www.buddyrents.com/store-locator.",
@@ -219,6 +256,8 @@ async function requestBuddyVideoSession(env,payload={}){
     "Spoken output only. Respond immediately. Use one short sentence and no more than 24 spoken words unless safety or a workflow error requires more. Never restate the customer's question or repeat known context. Ask one clear question at a time.",
     "# Known customer context",
     `Name: ${contact.firstName||payload.firstName||"Guest"} ${contact.lastName||payload.lastName||""}. Interest: ${contact.interest||payload.interest||"Not provided"}. Area: ${contact.location||payload.location||"Not provided"}. Notes: ${contact.comments||payload.comments||"None"}.`,
+    "# Current workflow state",
+    `Phase: ${workflow.phase}. Selected product: ${workflow.selectedProduct||"None"}. Document status: ${workflow.documentStatus}. Delivery status: ${workflow.deliveryStatus}.`,
     "# Reminder",
     "You are Buddy in a live browser video conversation. Use the known context, keep replies natural, and never ask for payment details."
   ].join("\n\n").slice(0,5000);
@@ -248,11 +287,13 @@ async function requestBuddyVideoSession(env,payload={}){
   const text=await upstream.text();let data={};try{data=text?JSON.parse(text):{};}catch{data={raw:text};}
   if(!upstream.ok||data?.ok===false)throw new Error(data?.error||`Black Hole video worker failed (${upstream.status})`);
   if(contactId){
-    await persistContact(env,contact,{stage:"Engaged",callStatus:"Video session created"});
-    await updateDashboardContact(env,contactId,{stage:"Engaged",callStatus:"Video session created"});
+    await Promise.all([
+      persistContact(env,contact,{stage:"Engaged",callStatus:"Video session created"}),
+      updateDashboardContact(env,contactId,{stage:"Engaged",callStatus:"Video session created"}),
+    ]);
   }
   await emit(env,{type:"video.session.created",contactId,room:data.room||"",dispatchId:data.dispatchId||"",source:payload.source||"buddy-web"});
-  return{ok:true,...data,contactId:contactId||undefined,workflow:{productOptions},runtime:{voiceId:runtimeReadiness.voiceId,llm:runtimeReadiness.llm}};
+  return{ok:true,...data,contactId:contactId||undefined,workflow,runtime:{voiceId:runtimeReadiness.voiceId,llm:runtimeReadiness.llm}};
 }
 
 async function processProductSelection(env,payload={}){
