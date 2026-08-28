@@ -17,7 +17,8 @@ BUDDY_VIDEO_VOICE_ID = "buddy"
 BUDDY_RUNTIME_URL = "https://buddy-voice.xyz-labs.xyz"
 BUDDY_AVATAR_PROMPT = "Use friendly, attentive upper-body movement and natural hand gestures while speaking."
 
-# Required secret for the shared blackhole-video-worker:
+# Required secret; use the same value for buddys-video-worker's
+# BLACKHOLE_BUDDYS_CAPABILITY_TOKEN:
 #   BLACKHOLE_CAPABILITY_TOKEN
 
 [[d1_databases]]
@@ -39,7 +40,7 @@ service = "buddys-voice-worker"
 
 [[services]]
 binding = "VIDEO"
-service = "blackhole-video-worker"
+service = "buddys-video-worker"
 
 [[queues.producers]]
 binding = "EVENTS"

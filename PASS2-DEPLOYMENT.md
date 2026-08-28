@@ -32,7 +32,7 @@ node scripts/bootstrap-workers.mjs
 
 ## 3. Set secrets
 
-Use the same `INTERNAL_CALL_SECRET` value for dashboard, concierge, and voice. Use the same `BLACKHOLE_CAPABILITY_TOKEN` value already configured on `blackhole-video-worker`.
+Use the same `INTERNAL_CALL_SECRET` value for dashboard, concierge, and voice. Generate one Buddy-only capability value and store it as `BLACKHOLE_BUDDYS_CAPABILITY_TOKEN` on `buddys-video-worker` and `BLACKHOLE_CAPABILITY_TOKEN` on `buddys-concierge-worker`.
 
 ```bash
 cd apps/dashboard
@@ -41,6 +41,12 @@ npx wrangler@latest secret put INTERNAL_CALL_SECRET
 cd ../blackhole-concierge-worker
 npx wrangler@latest secret put INTERNAL_CALL_SECRET
 npx wrangler@latest secret put BLACKHOLE_CAPABILITY_TOKEN
+
+cd ../video-worker
+npx wrangler@latest secret put LIVEKIT_API_KEY
+npx wrangler@latest secret put LIVEKIT_API_SECRET
+npx wrangler@latest secret put BLACKHOLE_BUDDYS_CAPABILITY_TOKEN
+npx wrangler@latest secret put LEMONSLICE_BUDDYS_API_KEY
 
 cd ../voice-worker
 npx wrangler@latest secret put INTERNAL_CALL_SECRET
@@ -59,8 +65,6 @@ cd ../email-worker
 npx wrangler@latest secret put RESEND_API_KEY
 ```
 
-Also set `LEMONSLICE_BUDDYS_API_KEY` on the shared `alley-ai` Cloudflare Worker after the companion Alley AI runtime PR is merged. This mirrors the proven AI Fans tenant-specific relay and avoids reusing a stale provider key.
-
 DocuSign and Google Calendar secrets remain optional for the first video smoke test. Set the existing DocuSign/Google values on `buddys-concierge-worker` before testing the complete purchase flow.
 
 ## 4. Deploy
@@ -75,10 +79,18 @@ BUDDY_RUNTIME_TOKEN='<configured runtime token>' node scripts/smoke-buddy-runtim
 
 Do not continue until the runtime smoke prints PASS for health, chat, and LiveKit TTS.
 
+Install the dedicated avatar service inside AI-Linux. If credentials are still present in an older local env, provide that file through the optional migration variable:
+
+```bash
+BUDDY_AVATAR_SOURCE_ENV=/path/to/previous-agent.env \
+  bash scripts/install-buddy-avatar-agent.sh
+```
+
 ```bash
 cd apps/sms-worker && npx wrangler@latest deploy
 cd ../email-worker && npx wrangler@latest deploy
 cd ../voice-worker && npx wrangler@latest deploy
+cd ../video-worker && npx wrangler@latest deploy
 cd ../blackhole-concierge-worker && npx wrangler@latest deploy
 cd ../dashboard && npx wrangler@latest deploy --env=""
 
@@ -93,12 +105,13 @@ If the Pages project already exists, skip `pages project create`.
 
 ## 5. Runtime and smoke checks
 
-The phone voice Worker now targets `https://alley-voice.xyz-labs.xyz`. Browser video dispatches to LiveKit `wss://eila-7257eve9.livekit.cloud`, agent name `lemonslice`, with `voice_provider=eila-runtime` and `voice_id=buddy`. Ensure the RX 6800 LiveKit worker is registered before testing.
+Browser video dispatches to LiveKit `wss://eila-7257eve9.livekit.cloud`, exact agent name `buddys-avatar`, with `voice_provider=eila-runtime` and `voice_id=buddy`. Ensure `buddys-avatar.service` is active and registered before testing.
 
 ```bash
 curl -fsS https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/api/health
 curl -fsS https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev/api/health
 curl -fsS https://buddys-voice-worker.cryptocapitalgroupfl.workers.dev/health
+curl -fsS https://buddys-video-worker.cryptocapitalgroupfl.workers.dev/health
 curl -fsS https://buddys.pages.dev/buddys/images/buddy-avatar.jpg -o /dev/null
 curl -fsS https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev/api/video/readiness
 ```

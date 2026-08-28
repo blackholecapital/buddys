@@ -7,6 +7,7 @@ const names = [
   "buddys-sms-worker",
   "buddys-email-worker",
   "buddys-voice-worker",
+  "buddys-video-worker",
   "buddys-concierge-worker",
   "buddys-dashboard-worker",
 ];
