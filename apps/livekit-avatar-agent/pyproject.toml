@@ -1,0 +1,10 @@
+[project]
+name = "buddys-livekit-avatar-agent"
+version = "1.0.0"
+requires-python = ">=3.10"
+dependencies = [
+  "livekit-agents[lemonslice,openai]>=1.7.0,<2.0.0",
+  "livekit-plugins-noise-cancellation>=0.3,<1.0",
+  "python-dotenv>=1.0,<2.0",
+]
+

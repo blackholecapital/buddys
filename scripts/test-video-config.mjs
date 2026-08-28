@@ -1,11 +1,25 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import worker from "../apps/blackhole-concierge-worker/src/index.js";
+
+const conciergeConfig = readFileSync(new URL("../apps/blackhole-concierge-worker/wrangler.toml", import.meta.url), "utf8");
+const videoConfig = readFileSync(new URL("../apps/video-worker/wrangler.toml", import.meta.url), "utf8");
+const agentSource = readFileSync(new URL("../apps/livekit-avatar-agent/src/agent.py", import.meta.url), "utf8");
+const agentTts = readFileSync(new URL("../apps/livekit-avatar-agent/src/buddy_tts.py", import.meta.url), "utf8");
+const latencyScript = readFileSync(new URL("./configure-buddy-avatar-latency.sh", import.meta.url), "utf8");
+
+assert.match(conciergeConfig, /binding = "VIDEO"\s+service = "buddys-video-worker"/);
+assert.match(videoConfig, /name = "buddys-video-worker"/);
+assert.match(videoConfig, /VIDEO_AGENT_NAME = "buddys-avatar"/);
+assert.match(agentSource, /TENANT_ID = "buddys"/);
+assert.match(agentSource, /AGENT_NAME = os\.getenv\("AGENT_NAME", "buddys-avatar"\)/);
+assert.doesNotMatch(`${agentSource}\n${agentTts}\n${latencyScript}`, /cloudflare-platform|EILA_RUNTIME_URL|AI_FANS_RUNTIME_URL|:8200/);
 
 let forwarded;
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async (request) => {
   const url = String(request instanceof Request ? request.url : request);
-  if (url === "https://alley-voice.xyz-labs.xyz/health") {
+  if (url === "https://buddy-voice.xyz-labs.xyz/health") {
     return Response.json({
       ok:true,
       compatibility:{ chat:true },
@@ -23,6 +37,7 @@ const env = {
   BUDDY_LEMONSLICE_AGENT_ID:"agent_should_not_be_forwarded",
   BUDDY_VIDEO_VOICE_PROVIDER:"eila-runtime",
   BUDDY_VIDEO_VOICE_ID:"buddy",
+  BUDDY_RUNTIME_URL:"https://buddy-voice.xyz-labs.xyz",
   VIDEO:{
     async fetch(request) {
       assert.equal(request.headers.get("x-blackhole-capability-token"), "test-capability-token");
@@ -89,7 +104,7 @@ assert.match(resumeBody.workflow.resumePrompt, /already selected/i);
 let videoCalledWithoutVoice = false;
 globalThis.fetch = async (request) => {
   const url = String(request instanceof Request ? request.url : request);
-  if (url === "https://alley-voice.xyz-labs.xyz/health") {
+  if (url === "https://buddy-voice.xyz-labs.xyz/health") {
     return Response.json({
       ok:true,
       compatibility:{ chat:true },
@@ -143,3 +158,4 @@ assert.match(videoLeadSms.message, /reply CALL/i);
 console.log("Buddy image-avatar video payload and live sales options: OK");
 console.log("Buddy missing-voice preflight: OK");
 console.log("Buddy video lead SMS follow-up: OK");
+console.log("Buddy-owned video Worker and avatar agent boundary: OK");

@@ -1,5 +1,16 @@
 const checks = [
   {
+    name:"Buddy video Worker",
+    url:"https://buddys-video-worker.cryptocapitalgroupfl.workers.dev/health",
+    status:200,
+    jsonOk:true,
+    validateJson:(body) => body?.service === "buddys-video-worker"
+      && body?.tenant === "buddys"
+      && body?.agentName === "buddys-avatar"
+      && body?.livekitConfigured === true
+      && body?.lemonsliceConfigured === true,
+  },
+  {
     name:"Buddy customer page",
     url:"https://buddys-4nm.pages.dev/buddys/",
     status:200,
@@ -49,7 +60,7 @@ const checks = [
   },
   {
     name:"Buddy LemonSlice relay route",
-    url:"https://alley-ai.cryptocapitalgroupfl.workers.dev/internal/lemonslice/buddys/sessions",
+    url:"https://buddys-video-worker.cryptocapitalgroupfl.workers.dev/internal/lemonslice/sessions?tenant=buddys&room=smoke",
     status:401,
     body:/unauthorized/i,
     init:{

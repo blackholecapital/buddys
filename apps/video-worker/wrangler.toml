@@ -1,0 +1,33 @@
+name = "buddys-video-worker"
+main = "src/index.js"
+compatibility_date = "2026-08-28"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+LIVEKIT_URL = "wss://eila-7257eve9.livekit.cloud"
+VIDEO_AGENT_NAME = "buddys-avatar"
+LEMONSLICE_API_URL = "https://lemonslice.com/api/liveai/sessions"
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "buddys_video_events"
+
+[[queues.producers]]
+binding = "EVENTS"
+queue = "buddys-communication-events"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+
+[secrets]
+required = [
+  "LIVEKIT_API_KEY",
+  "LIVEKIT_API_SECRET",
+  "BLACKHOLE_BUDDYS_CAPABILITY_TOKEN",
+  "LEMONSLICE_BUDDYS_API_KEY",
+]

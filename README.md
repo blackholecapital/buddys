@@ -15,15 +15,15 @@ Buddy web page
   -> /api/video/session
   -> dashboard worker
   -> Buddy concierge worker
-  -> blackhole-video-worker
-  -> LiveKit `lemonslice` agent + LemonSlice image avatar
-  -> Buddy/eila-runtime voice provider
+  -> buddys-video-worker
+  -> LiveKit `buddys-avatar` agent owned by this repository
+  -> LemonSlice image avatar + Buddy voice runtime
 ```
 
 The production default mirrors AI Fans and uses the public Buddy portrait at
 `https://buddys.pages.dev/buddys/images/buddy-avatar.jpg` as a LemonSlice `image-url` source. The saved LemonSlice agent `agent_9f9ee92bbcec14c3` remains available as an explicit fallback, but is not the default.
 
-The browser receives only the short-lived LiveKit room URL/token. LemonSlice and Black Hole capability credentials remain server-side.
+The browser receives only the short-lived LiveKit room URL/token. LemonSlice and Buddy capability credentials remain server-side. `apps/video-worker` dispatches only to `buddys-avatar`; `apps/livekit-avatar-agent` accepts only the `buddys` tenant and has no EILA-Overwatch or shared-agent fallback.
 
 The Buddy concierge performs a live runtime preflight before it creates a paid avatar room. A session is rejected unless Qwen chat is configured and the `buddy` Chatterbox voice is both available and prepared.
 
@@ -44,6 +44,23 @@ BUDDY_RUNTIME_TOKEN='<configured runtime token>' node scripts/smoke-buddy-runtim
 The unauthenticated readiness status is also available at `/api/video/readiness` on the Buddy concierge Worker. It exposes configuration state only, never credentials.
 
 
+## Install Buddy's avatar agent
+
+The complete LiveKit, LemonSlice, STT, local LLM, and TTS adapter now lives in `apps/livekit-avatar-agent`. Install it on the **AI-Linux WSL2 distro**, where systemd is PID 1:
+
+```bash
+BUDDY_AVATAR_SOURCE_ENV=/path/to/previous-agent.env \
+  bash scripts/install-buddy-avatar-agent.sh
+```
+
+The source env is optional and is used once to copy credentials. The installed service executes only this repository. It registers as `buddys-avatar`, listens on port `8092`, runs as `buddys-avatar.service`, and writes `/workspace/logs/buddys-avatar.log`.
+
+Verify it at any time:
+
+```bash
+apps/livekit-avatar-agent/bin/health.sh
+```
+
 ## Live-video latency tuning
 
 Buddy's fastest path keeps Qwen and the Buddy voice warm, streams phrase-progressive PCM, and sends the avatar agent directly to the home runtime instead of round-tripping each spoken turn through the public Cloudflare Tunnel.
@@ -54,7 +71,7 @@ On **AI-Linux**, apply the safe runtime settings and restart the EILA runtime:
 bash scripts/configure-buddy-runtime-performance.sh
 ```
 
-On the **Ubuntu-22.04 avatar-agent distro**, select the fastest reachable Buddy runtime, enable streaming TTS, and restart the systemd-owned LiveKit worker:
+On **AI-Linux**, select the fastest reachable Buddy runtime, enable streaming TTS, and restart Buddy's dedicated LiveKit worker:
 
 ```bash
 bash scripts/configure-buddy-avatar-latency.sh
@@ -72,7 +89,7 @@ The acceptance target is first audio below 800 ms p50 and 1.2 seconds p95. A hea
 
 ## Pass 2 deployment
 
-Buddy-specific Worker, D1, Queue, and Analytics Engine names are now declared in the Wrangler configs. The phone voice worker uses `https://alley-voice.xyz-labs.xyz`; browser video is dispatched to the LiveKit agent named `lemonslice` with `eila-runtime:buddy` voice metadata.
+Buddy-specific Worker, D1, Queue, and Analytics Engine names are declared in the Wrangler configs. Browser video is dispatched by `buddys-video-worker` to the LiveKit agent named `buddys-avatar` with `eila-runtime:buddy` voice metadata.
 
 Follow [PASS2-DEPLOYMENT.md](./PASS2-DEPLOYMENT.md) to provision the two D1 databases, create the queues, bootstrap Worker names, set secrets, deploy, and smoke test.
 
@@ -84,7 +101,7 @@ Set the following Cloudflare secret on the Buddy concierge worker:
 npx wrangler secret put BLACKHOLE_CAPABILITY_TOKEN
 ```
 
-The value must match the deployed `blackhole-video-worker` capability token. The internal service binding is already represented in `apps/blackhole-concierge-worker/wrangler.toml`.
+The value must match `BLACKHOLE_BUDDYS_CAPABILITY_TOKEN` on the deployed `buddys-video-worker`. The internal service binding is represented in `apps/blackhole-concierge-worker/wrangler.toml`.
 
 Optional non-secret overrides:
 
@@ -94,7 +111,7 @@ Optional non-secret overrides:
 - `BUDDY_VIDEO_VOICE_PROVIDER` (default `eila-runtime`)
 - `BUDDY_VIDEO_VOICE_MODEL`
 - `BUDDY_VIDEO_VOICE_ID` (default `buddy`)
-- `BUDDY_RUNTIME_URL` (default `https://alley-voice.xyz-labs.xyz`)
+- `BUDDY_RUNTIME_URL` (default `https://buddy-voice.xyz-labs.xyz`)
 - `BUDDY_AVATAR_PROMPT`
 
 ## Source lineage

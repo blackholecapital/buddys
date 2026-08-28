@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-agent_dir="${BUDDY_AVATAR_AGENT_DIR:-/workspace/repos/cloudflare-platform/shared/livekit-avatar-agent}"
+agent_dir="${BUDDY_AVATAR_AGENT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../apps/livekit-avatar-agent" && pwd)}"
 env_file="${BUDDY_AVATAR_AGENT_ENV:-${agent_dir}/.env}"
-service_name="${BUDDY_AVATAR_SERVICE:-blackhole-avatar.service}"
+service_name="${BUDDY_AVATAR_SERVICE:-buddys-avatar.service}"
+
+if [[ "$(id -u)" -ne 0 ]]; then
+  echo "Run this script as root inside AI-Linux." >&2
+  exit 1
+fi
 
 if [[ ! -d "${agent_dir}" || ! -f "${env_file}" ]]; then
   echo "Avatar agent or .env not found: ${agent_dir}" >&2
@@ -51,13 +56,13 @@ else
   echo "Buddy avatar will bypass the public tunnel: ${runtime_url}"
 fi
 
-if ! grep -qE '^(BLACKHOLE_BUDDYS_RUNTIME_TOKEN|BUDDY_RUNTIME_TOKEN|EILA_RUNTIME_TOKEN)=.+' "${env_file}"; then
+if ! grep -qE '^(BLACKHOLE_BUDDYS_RUNTIME_TOKEN|BUDDY_RUNTIME_TOKEN)=.+' "${env_file}"; then
   echo "Buddy runtime token is missing from the avatar agent .env" >&2
   exit 1
 fi
 
 upsert_env BLACKHOLE_BUDDYS_RUNTIME_URL "${runtime_url}"
-upsert_env EILA_LIVEKIT_STREAMING_TTS true
+upsert_env BUDDY_LIVEKIT_STREAMING_TTS true
 
 current_llm_base="$(sed -n 's/^LOCAL_LLM_BASE_URL=//p' "${env_file}" | tail -1)"
 llm_base=""
@@ -82,10 +87,10 @@ else
   echo "No reachable Ollama host advertises qwen3.5:9b; LiveKit LLM settings left unchanged."
 fi
 
-sudo systemctl restart "${service_name}"
+systemctl restart "${service_name}"
 sleep 4
-sudo systemctl is-active --quiet "${service_name}"
-sudo journalctl -u "${service_name}" -n 20 --no-pager | grep -E 'registered worker|TTS_SOURCE|ERROR' || true
+systemctl is-active --quiet "${service_name}"
+journalctl -u "${service_name}" -n 20 --no-pager | grep -E 'registered worker|TTS_SOURCE|ERROR' || true
 
 echo "Buddy avatar streaming latency settings applied."
 echo "Backup: ${backup}"
