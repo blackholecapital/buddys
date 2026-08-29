@@ -32,7 +32,20 @@ node scripts/bootstrap-workers.mjs
 
 ## 3. Set secrets
 
-Use the same `INTERNAL_CALL_SECRET` value for dashboard, concierge, and voice. Generate one Buddy-only capability value and store it as `BLACKHOLE_BUDDYS_CAPABILITY_TOKEN` on `buddys-video-worker` and `BLACKHOLE_CAPABILITY_TOKEN` on `buddys-concierge-worker`.
+Use the same `INTERNAL_CALL_SECRET` value for dashboard, concierge, and voice. The video and concierge Workers read their LiveKit, LemonSlice, and shared Buddy capability credentials from Cloudflare Secrets Store `default_secrets_store` (`00b34d29f2c94685b0f250dc5b1ee875`).
+
+The store already contains `XYZ_DEMO_LIVEKIT_API_KEY` and `XYZ_DEMO_LIVEKIT_API_SECRET`. Create the following two account-level secrets once if they are not already present:
+
+```bash
+npx wrangler@latest secrets-store secret create 00b34d29f2c94685b0f250dc5b1ee875 \
+  --name XYZ_DEMO_LEMONSLICE_API_KEY --scopes workers --remote
+
+openssl rand -hex 32 | npx wrangler@latest secrets-store secret create \
+  00b34d29f2c94685b0f250dc5b1ee875 \
+  --name BUDDYS_VIDEO_CAPABILITY_TOKEN --scopes workers --remote
+```
+
+The first command prompts once for the verified LemonSlice `sk_...` key. The second command generates the Buddy-only internal token without printing or saving it. Both `buddys-video-worker` and `buddys-concierge-worker` bind the same capability entry directly from the store.
 
 ```bash
 cd apps/dashboard
@@ -40,13 +53,6 @@ npx wrangler@latest secret put INTERNAL_CALL_SECRET
 
 cd ../blackhole-concierge-worker
 npx wrangler@latest secret put INTERNAL_CALL_SECRET
-npx wrangler@latest secret put BLACKHOLE_CAPABILITY_TOKEN
-
-cd ../video-worker
-npx wrangler@latest secret put LIVEKIT_API_KEY
-npx wrangler@latest secret put LIVEKIT_API_SECRET
-npx wrangler@latest secret put BLACKHOLE_BUDDYS_CAPABILITY_TOKEN
-npx wrangler@latest secret put LEMONSLICE_BUDDYS_API_KEY
 
 cd ../voice-worker
 npx wrangler@latest secret put INTERNAL_CALL_SECRET

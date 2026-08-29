@@ -11,6 +11,10 @@ const latencyScript = readFileSync(new URL("./configure-buddy-avatar-latency.sh"
 assert.match(conciergeConfig, /binding = "VIDEO"\s+service = "buddys-video-worker"/);
 assert.match(videoConfig, /name = "buddys-video-worker"/);
 assert.match(videoConfig, /VIDEO_AGENT_NAME = "buddys-avatar"/);
+assert.match(videoConfig, /binding = "LIVEKIT_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LIVEKIT_API_KEY"/);
+assert.match(videoConfig, /binding = "LEMONSLICE_BUDDYS_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LEMONSLICE_API_KEY"/);
+assert.match(videoConfig, /binding = "BLACKHOLE_BUDDYS_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
+assert.match(conciergeConfig, /binding = "BLACKHOLE_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
 assert.match(agentSource, /TENANT_ID = "buddys"/);
 assert.match(agentSource, /AGENT_NAME = os\.getenv\("AGENT_NAME", "buddys-avatar"\)/);
 assert.doesNotMatch(`${agentSource}\n${agentTts}\n${latencyScript}`, /cloudflare-platform|EILA_RUNTIME_URL|AI_FANS_RUNTIME_URL|:8200/);
@@ -31,7 +35,7 @@ globalThis.fetch = async (request) => {
 };
 const env = {
   INTERNAL_CALL_SECRET:"test-internal-secret",
-  BLACKHOLE_CAPABILITY_TOKEN:"test-capability-token",
+  BLACKHOLE_CAPABILITY_TOKEN:{ async get() { return "test-capability-token"; } },
   BUDDY_LIVE_SOURCE:"image-url",
   BUDDY_AVATAR_IMAGE_URL:"https://buddys.pages.dev/buddys/images/buddy-avatar.jpg",
   BUDDY_LEMONSLICE_AGENT_ID:"agent_should_not_be_forwarded",

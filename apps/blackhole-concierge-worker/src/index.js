@@ -4,6 +4,11 @@ import { fetchSignedEnvelopePdf } from "./docusign-document.js";
 import { rememberSmsContact, getSmsContact, getSmsContactById } from "./sms-session.js";
 import { createDeliveryEvent, googleCalendarConfigured, googleCalendarTimeZone, isSlotAvailable } from "./google-calendar.js";
 
+async function bindingValue(binding,max=5000){
+  const value=binding&&typeof binding.get==="function"?await binding.get():binding;
+  return String(value||"").trim().slice(0,max);
+}
+
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value)));
   return new Uint8Array(digest);
@@ -227,7 +232,8 @@ function buddyWorkflowState(contact={},productOptions=[]){
 
 async function requestBuddyVideoSession(env,payload={}){
   if(!env.VIDEO)return{ok:false,error:"VIDEO binding not configured"};
-  if(!env.BLACKHOLE_CAPABILITY_TOKEN)throw new Error("BLACKHOLE_CAPABILITY_TOKEN is not configured");
+  const capabilityToken=await bindingValue(env.BLACKHOLE_CAPABILITY_TOKEN,500);
+  if(!capabilityToken)throw new Error("BLACKHOLE_CAPABILITY_TOKEN is not configured");
   const contactId=String(payload.contactId||payload.contact?.id||"").trim();
   const contactPromise=contactId?resolveContact(env,contactId,payload):Promise.resolve(mergeContact(payload.contact||{},payload.context||{}));
   const [runtimeReadiness,contact]=await Promise.all([requireBuddyRuntime(env),contactPromise]);
@@ -263,7 +269,7 @@ async function requestBuddyVideoSession(env,payload={}){
   ].join("\n\n").slice(0,5000);
   const upstream=await env.VIDEO.fetch(new Request("https://blackhole.internal/internal/video/session",{
     method:"POST",
-    headers:{"content-type":"application/json","x-blackhole-capability-token":String(env.BLACKHOLE_CAPABILITY_TOKEN)},
+    headers:{"content-type":"application/json","x-blackhole-capability-token":capabilityToken},
     body:JSON.stringify({
       tenantId:"buddys",
       product:"buddys-personal-shopper",
