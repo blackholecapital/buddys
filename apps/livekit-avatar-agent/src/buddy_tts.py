@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 
 import aiohttp
 from livekit.agents import APIConnectOptions, tts, utils
@@ -96,6 +97,13 @@ class BuddyChunkedStream(tts.ChunkedStream):
         session = utils.http_context.http_session()
         timeout = aiohttp.ClientTimeout(total=120, sock_connect=self._conn_options.timeout)
         emitted = False
+        started_at = time.perf_counter()
+        first_pcm_ms: int | None = None
+        buffered_until: float | None = None
+        total_underrun_ms = 0.0
+        max_underrun_ms = 0.0
+        chunk_count = 0
+        audio_bytes = 0
 
         try:
             async with session.post(
@@ -116,6 +124,7 @@ class BuddyChunkedStream(tts.ChunkedStream):
                 async for chunk in response.content.iter_chunked(4800):
                     if not chunk:
                         continue
+                    arrived_at = time.perf_counter()
                     if not emitted:
                         output_emitter.initialize(
                             request_id=utils.shortuuid(),
@@ -124,10 +133,34 @@ class BuddyChunkedStream(tts.ChunkedStream):
                             mime_type="audio/pcm",
                         )
                         emitted = True
+                        first_pcm_ms = round((arrived_at - started_at) * 1000)
+                        buffered_until = arrived_at
+                    elif buffered_until is not None and arrived_at > buffered_until:
+                        underrun_ms = (arrived_at - buffered_until) * 1000
+                        total_underrun_ms += underrun_ms
+                        max_underrun_ms = max(max_underrun_ms, underrun_ms)
+                    audio_ms = len(chunk) / (24000 * 2) * 1000
+                    buffered_until = max(buffered_until or arrived_at, arrived_at) + audio_ms / 1000
+                    chunk_count += 1
+                    audio_bytes += len(chunk)
                     output_emitter.push(chunk)
 
                 if not emitted:
                     raise _PreAudioFailure("Buddy runtime returned no PCM audio")
+                logger.info(
+                    "BUDDY_TTS_METRICS endpoint=%s voice=%s characters=%s "
+                    "firstPcmMs=%s chunks=%s audioBytes=%s totalUnderrunMs=%s "
+                    "maxUnderrunMs=%s requestCompleteMs=%s",
+                    endpoint,
+                    self.runtime.voice_id,
+                    len(self._input_text),
+                    first_pcm_ms,
+                    chunk_count,
+                    audio_bytes,
+                    round(total_underrun_ms),
+                    round(max_underrun_ms),
+                    round((time.perf_counter() - started_at) * 1000),
+                )
         except asyncio.CancelledError:
             raise
         except (_MidStreamFailure, _PreAudioFailure):
