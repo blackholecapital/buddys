@@ -104,6 +104,7 @@ async def buddys_avatar_agent(ctx: agents.JobContext) -> None:
             model=os.getenv("LOCAL_LLM_MODEL", "qwen3.5:9b"),
             base_url=os.getenv("LOCAL_LLM_BASE_URL", "http://127.0.0.1:11434/v1"),
             temperature=float(os.getenv("LOCAL_LLM_TEMPERATURE", "0.35")),
+            reasoning_effort=os.getenv("LOCAL_LLM_REASONING_EFFORT", "none"),
         ),
         stt=inference.STT(
             model=os.getenv("LIVEKIT_STT_MODEL", "deepgram/nova-3"),
