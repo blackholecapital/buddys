@@ -32,9 +32,21 @@ RELAY_BASE_URL = os.getenv(
 ).strip()
 
 
+VOICE_DELIVERY_RULES = """
+Voice delivery rules:
+- Speak exactly one short sentence per turn with at most fourteen words.
+- Do not use commas semicolons colons dashes lists or multiple questions.
+- Ask only one question at a time.
+- Never narrate reasoning.
+- Move the sales pipeline forward one customer decision at a time.
+""".strip()
+
+
 class Assistant(Agent):
     def __init__(self, instructions: str) -> None:
-        super().__init__(instructions=instructions)
+        super().__init__(
+            instructions=f"{instructions.rstrip()}\n\n{VOICE_DELIVERY_RULES}"
+        )
 
 
 def required(data: dict, key: str) -> str:
@@ -158,10 +170,7 @@ async def buddys_avatar_agent(ctx: agents.JobContext) -> None:
     greeting_settle_ms = max(0, int(os.getenv("BUDDY_GREETING_SETTLE_MS", "250")))
     if greeting_settle_ms:
         await asyncio.sleep(greeting_settle_ms / 1000)
-    greeting = (
-        f"Hi, I'm {creator_name}. Tell me what you're shopping for, "
-        "and I'll help narrow it down."
-    )
+    greeting = f"Hi I'm {creator_name} and I can help you find the right option."
     logger.info("GREETING_START room=%s characters=%s", relay_room, len(greeting))
     await session.say(greeting, allow_interruptions=False)
     logger.info("GREETING_COMPLETE room=%s", relay_room)
