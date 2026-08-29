@@ -67,6 +67,7 @@ function payload(text) {
   });
 }
 
+async function main() {
 const healthRequest = await request("/health");
 const health = await healthRequest.response.json();
 console.log(
@@ -155,3 +156,10 @@ console.log(
   "Targets: first audio <1200 ms p95; total/max underrun 0 ms. " +
   "Any underrun predicts an audible stall or stutter."
 );
+
+}
+
+main().catch((error) => {
+  console.error(error?.stack || error);
+  process.exit(1);
+});
