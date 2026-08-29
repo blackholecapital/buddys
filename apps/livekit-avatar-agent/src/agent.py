@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -154,9 +155,16 @@ async def buddys_avatar_agent(ctx: agents.JobContext) -> None:
     )
     await avatar.wait_for_join()
     logger.info("AVATAR_JOINED room=%s", relay_room)
-    await session.generate_reply(
-        instructions=f"Greet the customer naturally as {creator_name}. Keep it brief and stay in character.",
+    greeting_settle_ms = max(0, int(os.getenv("BUDDY_GREETING_SETTLE_MS", "250")))
+    if greeting_settle_ms:
+        await asyncio.sleep(greeting_settle_ms / 1000)
+    greeting = (
+        f"Hi, I'm {creator_name}. Tell me what you're shopping for, "
+        "and I'll help narrow it down."
     )
+    logger.info("GREETING_START room=%s characters=%s", relay_room, len(greeting))
+    await session.say(greeting, allow_interruptions=False)
+    logger.info("GREETING_COMPLETE room=%s", relay_room)
 
 
 if __name__ == "__main__":
