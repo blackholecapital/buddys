@@ -82,6 +82,7 @@ if [[ -n "${llm_base}" ]]; then
   upsert_env LOCAL_LLM_BASE_URL "${llm_base}"
   upsert_env LOCAL_LLM_MODEL qwen3.5:9b
   upsert_env LOCAL_LLM_TEMPERATURE 0.35
+  upsert_env LOCAL_LLM_REASONING_EFFORT none
   echo "Buddy LiveKit LLM set to qwen3.5:9b at ${llm_base}."
 else
   echo "No reachable Ollama host advertises qwen3.5:9b; LiveKit LLM settings left unchanged."
