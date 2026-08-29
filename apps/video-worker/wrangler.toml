@@ -24,10 +24,22 @@ head_sampling_rate = 1
 [observability.logs]
 enabled = true
 
-[secrets]
-required = [
-  "LIVEKIT_API_KEY",
-  "LIVEKIT_API_SECRET",
-  "BLACKHOLE_BUDDYS_CAPABILITY_TOKEN",
-  "LEMONSLICE_BUDDYS_API_KEY",
-]
+[[secrets_store_secrets]]
+binding = "LIVEKIT_API_KEY"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_LIVEKIT_API_KEY"
+
+[[secrets_store_secrets]]
+binding = "LIVEKIT_API_SECRET"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_LIVEKIT_API_SECRET"
+
+[[secrets_store_secrets]]
+binding = "BLACKHOLE_BUDDYS_CAPABILITY_TOKEN"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"
+
+[[secrets_store_secrets]]
+binding = "LEMONSLICE_BUDDYS_API_KEY"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_LEMONSLICE_API_KEY"
