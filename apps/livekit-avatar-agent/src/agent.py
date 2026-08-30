@@ -137,7 +137,7 @@ async def buddys_avatar_agent(ctx: agents.JobContext) -> None:
         ),
     )
 
-    await ctx.connect()
+    await ctx.connect(single_peer_connection=True)
     separator = "&" if "?" in RELAY_BASE_URL else "?"
     relay_url = (
         f"{RELAY_BASE_URL}{separator}tenant={quote(TENANT_ID)}"
@@ -178,4 +178,3 @@ async def buddys_avatar_agent(ctx: agents.JobContext) -> None:
 
 if __name__ == "__main__":
     agents.cli.run_app(server)
-
