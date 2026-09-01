@@ -21,8 +21,9 @@ assert.match(conciergeConfig, /standard encrypted Worker secret named BLACKHOLE_
 // Buddy's dedicated worker and agent remain standalone rollback assets.
 assert.match(agentSource, /TENANT_ID = "buddys"/);
 assert.match(agentSource, /AGENT_NAME = os\.getenv\("AGENT_NAME", "buddys-avatar"\)/);
-assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_PROVIDER = "eila-runtime"/);
-assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_ID = "buddy"/);
+assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_PROVIDER = "livekit-inference"/);
+assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_MODEL = "xai\/tts-1"/);
+assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_ID = "leo"/);
 assert.doesNotMatch(`${agentSource}\n${agentTts}\n${latencyScript}`, /cloudflare-platform|EILA_RUNTIME_URL|AI_FANS_RUNTIME_URL|:8200/);
 
 let forwarded;
@@ -47,8 +48,9 @@ const env = {
   BUDDY_LIVE_SOURCE:"image-url",
   BUDDY_AVATAR_IMAGE_URL:"https://buddys.pages.dev/buddys/images/buddy-avatar.jpg",
   BUDDY_LEMONSLICE_AGENT_ID:"agent_should_not_be_forwarded",
-  BUDDY_VIDEO_VOICE_PROVIDER:"eila-runtime",
-  BUDDY_VIDEO_VOICE_ID:"buddy",
+  BUDDY_VIDEO_VOICE_PROVIDER:"livekit-inference",
+  BUDDY_VIDEO_VOICE_MODEL:"xai/tts-1",
+  BUDDY_VIDEO_VOICE_ID:"leo",
   BUDDY_RUNTIME_URL:"https://buddy-voice.xyz-labs.xyz",
   VIDEO:{
     async fetch(request) {
@@ -92,8 +94,9 @@ assert.equal(initialForwarded.avatarProvider, "lemonslice");
 assert.equal(initialForwarded.avatarSource, "image-url");
 assert.equal(initialForwarded.avatarImageUrl, "https://buddys.pages.dev/buddys/images/buddy-avatar.jpg");
 assert.equal(initialForwarded.lemonsliceAgentId, "");
-assert.equal(initialForwarded.voiceProvider, "eila-runtime");
-assert.equal(initialForwarded.voiceId, "buddy");
+assert.equal(initialForwarded.voiceProvider, "livekit-inference");
+assert.equal(initialForwarded.voiceModel, "xai/tts-1");
+assert.equal(initialForwarded.voiceId, "leo");
 assert.match(initialForwarded.instructions, /Interest: TVs/);
 assert.match(initialForwarded.instructions, /Area: Orlando/);
 assert.match(initialForwarded.instructions, /65-inch OLED 4K Smart TV/);
