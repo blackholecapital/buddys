@@ -4,6 +4,8 @@ compatibility_date = "2026-08-25"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
+TENANT_ID = "buddys"
+RUNTIME_TARGET = "blackhole"
 PUBLIC_BASE_URL = "https://buddys-concierge-worker.cryptocapitalgroupfl.workers.dev"
 DASHBOARD_URL = "https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev"
 DOCUSIGN_BASE_PATH = "https://demo.docusign.net/restapi"
@@ -56,7 +58,7 @@ head_sampling_rate = 1
 [[secrets_store_secrets]]
 binding = "BLACKHOLE_CAPABILITY_TOKEN"
 store_id = "00b34d29f2c94685b0f250dc5b1ee875"
-secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"
+secret_name = "XYZ_DEMO_EILA_RUNTIME_TOKEN"
 
 [secrets]
 required = ["INTERNAL_CALL_SECRET"]

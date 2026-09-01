@@ -228,6 +228,8 @@ async function requestBuddyVideoSession(env,payload={}){
   if(!env.VIDEO)return{ok:false,error:"VIDEO binding not configured"};
   const capabilityToken=await bindingValue(env.BLACKHOLE_CAPABILITY_TOKEN,500);
   if(!capabilityToken)throw new Error("BLACKHOLE_CAPABILITY_TOKEN is not configured");
+  const tenantId=String(env.TENANT_ID||"").trim();
+  if(!tenantId)throw new Error("TENANT_ID is not configured");
   const contactId=String(payload.contactId||payload.contact?.id||"").trim();
   const contactPromise=contactId?resolveContact(env,contactId,payload):Promise.resolve(mergeContact(payload.contact||{},payload.context||{}));
   const [runtimeReadiness,contact]=await Promise.all([getBuddyRuntimeReadiness(env),contactPromise]);
@@ -265,7 +267,7 @@ async function requestBuddyVideoSession(env,payload={}){
     method:"POST",
     headers:{"content-type":"application/json","x-blackhole-capability-token":capabilityToken},
     body:JSON.stringify({
-      tenantId:"buddys",
+      tenantId,
       product:"buddys-personal-shopper",
       creatorId:"buddy",
       creatorName:"Buddy",
@@ -339,7 +341,8 @@ export default { async fetch(request,env,ctx){
       ok,
       service:"buddys-live-video",
       adapter:"buddy-concierge",
-      tenantId:"buddys",
+      tenantId:String(env.TENANT_ID||""),
+      runtimeTarget:String(env.RUNTIME_TARGET||""),
       runtimeRequiredForSession:false,
       brokerConfigured,
       capabilityConfigured,

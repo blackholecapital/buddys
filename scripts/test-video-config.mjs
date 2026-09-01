@@ -8,13 +8,15 @@ const agentSource = readFileSync(new URL("../apps/livekit-avatar-agent/src/agent
 const agentTts = readFileSync(new URL("../apps/livekit-avatar-agent/src/buddy_tts.py", import.meta.url), "utf8");
 const latencyScript = readFileSync(new URL("./configure-buddy-avatar-latency.sh", import.meta.url), "utf8");
 
+assert.match(conciergeConfig, /TENANT_ID = "buddys"/);
+assert.match(conciergeConfig, /RUNTIME_TARGET = "blackhole"/);
 assert.match(conciergeConfig, /binding = "VIDEO"\s+service = "blackhole-video-worker"/);
 assert.match(videoConfig, /name = "buddys-video-worker"/);
 assert.match(videoConfig, /VIDEO_AGENT_NAME = "buddys-avatar"/);
 assert.match(videoConfig, /binding = "LIVEKIT_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LIVEKIT_API_KEY"/);
 assert.match(videoConfig, /binding = "LEMONSLICE_BUDDYS_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LEMONSLICE_API_KEY"/);
 assert.match(videoConfig, /binding = "BLACKHOLE_BUDDYS_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
-assert.match(conciergeConfig, /binding = "BLACKHOLE_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
+assert.match(conciergeConfig, /binding = "BLACKHOLE_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_EILA_RUNTIME_TOKEN"/);
 // Buddy's dedicated worker and agent remain standalone rollback assets.
 assert.match(agentSource, /TENANT_ID = "buddys"/);
 assert.match(agentSource, /AGENT_NAME = os\.getenv\("AGENT_NAME", "buddys-avatar"\)/);
@@ -38,6 +40,8 @@ globalThis.fetch = async (request) => {
 };
 const env = {
   INTERNAL_CALL_SECRET:"test-internal-secret",
+  TENANT_ID:"buddys",
+  RUNTIME_TARGET:"blackhole",
   BLACKHOLE_CAPABILITY_TOKEN:{ async get() { return "test-capability-token"; } },
   BUDDY_LIVE_SOURCE:"image-url",
   BUDDY_AVATAR_IMAGE_URL:"https://buddys.pages.dev/buddys/images/buddy-avatar.jpg",
@@ -81,6 +85,7 @@ const resumeResponse = await worker.fetch(new Request("https://buddys.internal/i
 globalThis.fetch = originalFetch;
 
 assert.equal(response.status, 200);
+assert.equal(initialForwarded.tenantId, "buddys");
 assert.equal(initialForwarded.product, "buddys-personal-shopper");
 assert.equal(initialForwarded.avatarProvider, "lemonslice");
 assert.equal(initialForwarded.avatarSource, "image-url");
