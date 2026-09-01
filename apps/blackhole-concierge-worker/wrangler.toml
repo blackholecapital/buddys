@@ -12,9 +12,8 @@ DOCUSIGN_SELECTION_CUTOFF_MS = "1786309440000"
 BUDDY_LIVE_SOURCE = "image-url"
 BUDDY_AVATAR_IMAGE_URL = "https://buddys-4nm.pages.dev/buddys/images/buddy-avatar.jpg"
 BUDDY_LEMONSLICE_AGENT_ID = "agent_9f9ee92bbcec14c3"
-BUDDY_VIDEO_VOICE_PROVIDER = "livekit-inference"
-BUDDY_VIDEO_VOICE_MODEL = "xai/tts-1"
-BUDDY_VIDEO_VOICE_ID = "leo"
+BUDDY_VIDEO_VOICE_PROVIDER = "eila-runtime"
+BUDDY_VIDEO_VOICE_ID = "buddy"
 BUDDY_RUNTIME_URL = "https://buddy-voice.xyz-labs.xyz"
 BUDDY_AVATAR_PROMPT = "Use friendly, attentive upper-body movement and natural hand gestures while speaking."
 
@@ -37,7 +36,7 @@ service = "buddys-voice-worker"
 
 [[services]]
 binding = "VIDEO"
-service = "blackhole-video-worker"
+service = "buddys-video-worker"
 
 [[queues.producers]]
 binding = "EVENTS"
