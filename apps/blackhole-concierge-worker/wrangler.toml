@@ -34,9 +34,12 @@ service = "buddys-email-worker"
 binding = "VOICE"
 service = "buddys-voice-worker"
 
+# Buddy remains independently deployable. The concierge is its tenant adapter
+# and consumes the existing shared video runtime contract, matching EILA OS and
+# AI Fans without coupling this repository to another product repository.
 [[services]]
 binding = "VIDEO"
-service = "buddys-video-worker"
+service = "blackhole-video-worker"
 
 [[queues.producers]]
 binding = "EVENTS"
