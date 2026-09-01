@@ -15,17 +15,17 @@ Buddy web page
   -> /api/video/session
   -> dashboard worker
   -> Buddy concierge worker
-  -> shared blackhole-video-worker
-  -> shared LiveKit `blackhole-avatar` tenant adapter
-  -> LemonSlice image avatar + tenant-selected voice
+  -> buddys-video-worker
+  -> LiveKit `buddys-avatar` agent owned by this repository
+  -> LemonSlice image avatar + Buddy voice runtime
 ```
 
 The production default mirrors AI Fans and uses the public Buddy portrait at
 `https://buddys.pages.dev/buddys/images/buddy-avatar.jpg` as a LemonSlice `image-url` source. The saved LemonSlice agent `agent_9f9ee92bbcec14c3` remains available as an explicit fallback, but is not the default.
 
-The browser receives only the short-lived LiveKit room URL/token. LemonSlice and Buddy capability credentials remain server-side. Production Buddy video is tenant metadata on the same `blackhole-video-worker` and `blackhole-avatar` path used by EILA Overwatch and AI Fans.
+The browser receives only the short-lived LiveKit room URL/token. LemonSlice and Buddy capability credentials remain server-side. `apps/video-worker` dispatches only to `buddys-avatar`; `apps/livekit-avatar-agent` accepts only the `buddys` tenant and has no EILA-Overwatch or shared-agent fallback.
 
-The former dedicated `apps/video-worker`, `apps/livekit-avatar-agent`, and Buddy Chatterbox runtime remain rollback assets. Their public health is advisory and never blocks creation of a shared-adapter video room.
+The Buddy concierge performs a live runtime preflight before it creates a paid avatar room. A session is rejected unless Qwen chat is configured and the `buddy` Chatterbox voice is both available and prepared.
 
 ## Install Buddy's runtime voice
 
@@ -44,7 +44,7 @@ BUDDY_RUNTIME_TOKEN='<configured runtime token>' node scripts/smoke-buddy-runtim
 The unauthenticated readiness status is also available at `/api/video/readiness` on the Buddy concierge Worker. It exposes configuration state only, never credentials.
 
 
-## Dedicated Buddy avatar rollback
+## Install Buddy's avatar agent
 
 The complete LiveKit, LemonSlice, STT, local LLM, and TTS adapter now lives in `apps/livekit-avatar-agent`. Install it on the **AI-Linux WSL2 distro**, where systemd is PID 1:
 
