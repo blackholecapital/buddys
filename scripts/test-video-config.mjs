@@ -8,15 +8,20 @@ const agentSource = readFileSync(new URL("../apps/livekit-avatar-agent/src/agent
 const agentTts = readFileSync(new URL("../apps/livekit-avatar-agent/src/buddy_tts.py", import.meta.url), "utf8");
 const latencyScript = readFileSync(new URL("./configure-buddy-avatar-latency.sh", import.meta.url), "utf8");
 
-assert.match(conciergeConfig, /binding = "VIDEO"\s+service = "buddys-video-worker"/);
+assert.match(conciergeConfig, /binding = "VIDEO"\s+service = "blackhole-video-worker"/);
 assert.match(videoConfig, /name = "buddys-video-worker"/);
 assert.match(videoConfig, /VIDEO_AGENT_NAME = "buddys-avatar"/);
 assert.match(videoConfig, /binding = "LIVEKIT_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LIVEKIT_API_KEY"/);
 assert.match(videoConfig, /binding = "LEMONSLICE_BUDDYS_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LEMONSLICE_API_KEY"/);
 assert.match(videoConfig, /binding = "BLACKHOLE_BUDDYS_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
 assert.match(conciergeConfig, /binding = "BLACKHOLE_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
+// The dedicated Buddy worker and agent remain source-controlled rollback assets,
+ // but production dispatch is now bound to blackhole-video-worker/blackhole-avatar.
 assert.match(agentSource, /TENANT_ID = "buddys"/);
 assert.match(agentSource, /AGENT_NAME = os\.getenv\("AGENT_NAME", "buddys-avatar"\)/);
+assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_PROVIDER = "livekit-inference"/);
+assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_MODEL = "xai\/tts-1"/);
+assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_ID = "leo"/);
 assert.doesNotMatch(`${agentSource}\n${agentTts}\n${latencyScript}`, /cloudflare-platform|EILA_RUNTIME_URL|AI_FANS_RUNTIME_URL|:8200/);
 
 let forwarded;
@@ -39,8 +44,9 @@ const env = {
   BUDDY_LIVE_SOURCE:"image-url",
   BUDDY_AVATAR_IMAGE_URL:"https://buddys.pages.dev/buddys/images/buddy-avatar.jpg",
   BUDDY_LEMONSLICE_AGENT_ID:"agent_should_not_be_forwarded",
-  BUDDY_VIDEO_VOICE_PROVIDER:"eila-runtime",
-  BUDDY_VIDEO_VOICE_ID:"buddy",
+  BUDDY_VIDEO_VOICE_PROVIDER:"livekit-inference",
+  BUDDY_VIDEO_VOICE_MODEL:"xai/tts-1",
+  BUDDY_VIDEO_VOICE_ID:"leo",
   BUDDY_RUNTIME_URL:"https://buddy-voice.xyz-labs.xyz",
   VIDEO:{
     async fetch(request) {
@@ -83,8 +89,9 @@ assert.equal(initialForwarded.avatarProvider, "lemonslice");
 assert.equal(initialForwarded.avatarSource, "image-url");
 assert.equal(initialForwarded.avatarImageUrl, "https://buddys.pages.dev/buddys/images/buddy-avatar.jpg");
 assert.equal(initialForwarded.lemonsliceAgentId, "");
-assert.equal(initialForwarded.voiceProvider, "eila-runtime");
-assert.equal(initialForwarded.voiceId, "buddy");
+assert.equal(initialForwarded.voiceProvider, "livekit-inference");
+assert.equal(initialForwarded.voiceModel, "xai/tts-1");
+assert.equal(initialForwarded.voiceId, "leo");
 assert.match(initialForwarded.instructions, /Interest: TVs/);
 assert.match(initialForwarded.instructions, /Area: Orlando/);
 assert.match(initialForwarded.instructions, /65-inch OLED 4K Smart TV/);
@@ -95,8 +102,9 @@ const body = await response.json();
 assert.equal(body.workflow.productOptions.length, 2);
 assert.equal(body.workflow.productOptions[0].id, "tv-65-oled");
 assert.equal(body.workflow.phase, "awaiting-product");
-assert.equal(body.runtime.voiceId, "buddy");
-assert.equal(body.runtime.llm.model, "qwen3.5:9b");
+assert.equal(body.runtime.requiredForSession, false);
+assert.equal(body.runtime.adapter, "blackhole-avatar");
+assert.equal(body.runtime.voiceId, "leo");
 
 const resumeBody = await resumeResponse.json();
 assert.equal(resumeResponse.status, 200);
@@ -105,34 +113,23 @@ assert.equal(resumeBody.workflow.selectedProduct, "Apple iPhone 16 Pro");
 assert.equal(resumeBody.workflow.signingUrl, "https://example.com/sign");
 assert.match(resumeBody.workflow.resumePrompt, /already selected/i);
 
-let videoCalledWithoutVoice = false;
-globalThis.fetch = async (request) => {
-  const url = String(request instanceof Request ? request.url : request);
-  if (url === "https://buddy-voice.xyz-labs.xyz/health") {
-    return Response.json({
-      ok:true,
-      compatibility:{ chat:true },
-      llm:{ provider:"ollama", model:"qwen3.5:9b", baseUrlConfigured:true },
-      tts:{ backend:"chatterbox", loaded:true, availableVoices:["ebc"], preparedVoices:["ebc"] },
-    });
-  }
-  return originalFetch(request);
+let videoCalledWithoutLegacyRuntime = false;
+globalThis.fetch = async () => {
+  throw new Error("legacy Buddy runtime must not be called during video session creation");
 };
 
-const rejected = await worker.fetch(new Request("https://buddys.internal/internal/video/session", {
+const sharedAdapterResponse = await worker.fetch(new Request("https://buddys.internal/internal/video/session", {
   method:"POST",
   headers:{ "content-type":"application/json", "x-internal-call-secret":"test-internal-secret" },
   body:JSON.stringify({ source:"direct" }),
 }), {
   ...env,
-  VIDEO:{ async fetch() { videoCalledWithoutVoice = true; return Response.json({ ok:true }); } },
+  VIDEO:{ async fetch() { videoCalledWithoutLegacyRuntime = true; return Response.json({ ok:true }); } },
 }, { waitUntil() {} });
 
 globalThis.fetch = originalFetch;
-const rejectedBody = await rejected.json();
-assert.equal(rejected.status, 502);
-assert.match(rejectedBody.error, /voice 'buddy' is not available/);
-assert.equal(videoCalledWithoutVoice, false);
+assert.equal(sharedAdapterResponse.status, 200);
+assert.equal(videoCalledWithoutLegacyRuntime, true);
 
 let videoLeadSms = null;
 const videoLeadResponse = await worker.fetch(new Request("https://buddys.internal/internal/leads", {
@@ -160,6 +157,6 @@ assert.equal(videoLeadSms.messageType, "buddy-video-welcome");
 assert.match(videoLeadSms.message, /reply CALL/i);
 
 console.log("Buddy image-avatar video payload and live sales options: OK");
-console.log("Buddy missing-voice preflight: OK");
+console.log("Buddy legacy runtime is advisory for shared adapter sessions: OK");
 console.log("Buddy video lead SMS follow-up: OK");
-console.log("Buddy-owned video Worker and avatar agent boundary: OK");
+console.log("Buddy shared blackhole-video-worker/blackhole-avatar boundary: OK");
