@@ -107,7 +107,7 @@ const body = await response.json();
 assert.equal(body.workflow.productOptions.length, 2);
 assert.equal(body.workflow.productOptions[0].id, "tv-65-oled");
 assert.equal(body.workflow.phase, "awaiting-product");
-assert.equal(body.runtime.voiceId, "buddy");
+assert.equal(body.runtime.voiceId, "leo");
 assert.equal(body.runtime.llm.model, "qwen3.5:9b");
 
 const resumeBody = await resumeResponse.json();
