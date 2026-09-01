@@ -14,18 +14,17 @@ Dedicated Buddy's Home Furnishings demo repository, split from `blackholecapital
 Buddy web page
   -> /api/video/session
   -> dashboard worker
-  -> Buddy concierge worker
-  -> buddys-video-worker
-  -> LiveKit `buddys-avatar` agent owned by this repository
-  -> LemonSlice image avatar + Buddy voice runtime
+  -> Buddy concierge worker (standalone tenant adapter)
+  -> existing shared video/runtime contract
+  -> LemonSlice image avatar + Buddy's `eila-runtime / buddy` voice
 ```
 
 The production default mirrors AI Fans and uses the public Buddy portrait at
 `https://buddys.pages.dev/buddys/images/buddy-avatar.jpg` as a LemonSlice `image-url` source. The saved LemonSlice agent `agent_9f9ee92bbcec14c3` remains available as an explicit fallback, but is not the default.
 
-The browser receives only the short-lived LiveKit room URL/token. LemonSlice and Buddy capability credentials remain server-side. `apps/video-worker` dispatches only to `buddys-avatar`; `apps/livekit-avatar-agent` accepts only the `buddys` tenant and has no EILA-Overwatch or shared-agent fallback.
+The browser receives only the short-lived LiveKit room URL/token. LemonSlice and Buddy capability credentials remain server-side. Buddy stays independently deployable: its concierge owns the tenant adapter, validates Buddy's avatar/voice metadata, and submits the session through the same runtime contract proven by EILA OS and AI Fans.
 
-The Buddy concierge performs a live runtime preflight before it creates a paid avatar room. A session is rejected unless Qwen chat is configured and the `buddy` Chatterbox voice is both available and prepared.
+Public `buddy-voice.xyz-labs.xyz` health is advisory for browser video because the avatar runtime consumes Buddy's tenant-local voice route. A tunnel outage no longer blocks room creation. `apps/video-worker` and `apps/livekit-avatar-agent` remain Buddy-owned standalone rollback assets and continue accepting only `tenant_id=buddys`.
 
 ## Install Buddy's runtime voice
 

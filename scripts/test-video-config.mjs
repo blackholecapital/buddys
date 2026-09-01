@@ -8,15 +8,18 @@ const agentSource = readFileSync(new URL("../apps/livekit-avatar-agent/src/agent
 const agentTts = readFileSync(new URL("../apps/livekit-avatar-agent/src/buddy_tts.py", import.meta.url), "utf8");
 const latencyScript = readFileSync(new URL("./configure-buddy-avatar-latency.sh", import.meta.url), "utf8");
 
-assert.match(conciergeConfig, /binding = "VIDEO"\s+service = "buddys-video-worker"/);
+assert.match(conciergeConfig, /binding = "VIDEO"\s+service = "blackhole-video-worker"/);
 assert.match(videoConfig, /name = "buddys-video-worker"/);
 assert.match(videoConfig, /VIDEO_AGENT_NAME = "buddys-avatar"/);
 assert.match(videoConfig, /binding = "LIVEKIT_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LIVEKIT_API_KEY"/);
 assert.match(videoConfig, /binding = "LEMONSLICE_BUDDYS_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LEMONSLICE_API_KEY"/);
 assert.match(videoConfig, /binding = "BLACKHOLE_BUDDYS_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
 assert.match(conciergeConfig, /binding = "BLACKHOLE_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
+// Buddy's dedicated worker and agent remain standalone rollback assets.
 assert.match(agentSource, /TENANT_ID = "buddys"/);
 assert.match(agentSource, /AGENT_NAME = os\.getenv\("AGENT_NAME", "buddys-avatar"\)/);
+assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_PROVIDER = "eila-runtime"/);
+assert.match(conciergeConfig, /BUDDY_VIDEO_VOICE_ID = "buddy"/);
 assert.doesNotMatch(`${agentSource}\n${agentTts}\n${latencyScript}`, /cloudflare-platform|EILA_RUNTIME_URL|AI_FANS_RUNTIME_URL|:8200/);
 
 let forwarded;
@@ -105,7 +108,7 @@ assert.equal(resumeBody.workflow.selectedProduct, "Apple iPhone 16 Pro");
 assert.equal(resumeBody.workflow.signingUrl, "https://example.com/sign");
 assert.match(resumeBody.workflow.resumePrompt, /already selected/i);
 
-let videoCalledWithoutVoice = false;
+let videoCalledWithDegradedPublicRuntime = false;
 globalThis.fetch = async (request) => {
   const url = String(request instanceof Request ? request.url : request);
   if (url === "https://buddy-voice.xyz-labs.xyz/health") {
@@ -119,20 +122,22 @@ globalThis.fetch = async (request) => {
   return originalFetch(request);
 };
 
-const rejected = await worker.fetch(new Request("https://buddys.internal/internal/video/session", {
+const degradedRuntimeResponse = await worker.fetch(new Request("https://buddys.internal/internal/video/session", {
   method:"POST",
   headers:{ "content-type":"application/json", "x-internal-call-secret":"test-internal-secret" },
   body:JSON.stringify({ source:"direct" }),
 }), {
   ...env,
-  VIDEO:{ async fetch() { videoCalledWithoutVoice = true; return Response.json({ ok:true }); } },
+  VIDEO:{ async fetch() { videoCalledWithDegradedPublicRuntime = true; return Response.json({ ok:true }); } },
 }, { waitUntil() {} });
 
 globalThis.fetch = originalFetch;
-const rejectedBody = await rejected.json();
-assert.equal(rejected.status, 502);
-assert.match(rejectedBody.error, /voice 'buddy' is not available/);
-assert.equal(videoCalledWithoutVoice, false);
+const degradedRuntimeBody = await degradedRuntimeResponse.json();
+assert.equal(degradedRuntimeResponse.status, 200);
+assert.equal(degradedRuntimeBody.runtime.ok, false);
+assert.equal(degradedRuntimeBody.runtime.requiredForSession, false);
+assert.match(degradedRuntimeBody.runtime.errors.join(" "), /voice 'buddy' is not available/);
+assert.equal(videoCalledWithDegradedPublicRuntime, true);
 
 let videoLeadSms = null;
 const videoLeadResponse = await worker.fetch(new Request("https://buddys.internal/internal/leads", {
@@ -160,6 +165,6 @@ assert.equal(videoLeadSms.messageType, "buddy-video-welcome");
 assert.match(videoLeadSms.message, /reply CALL/i);
 
 console.log("Buddy image-avatar video payload and live sales options: OK");
-console.log("Buddy missing-voice preflight: OK");
+console.log("Buddy public runtime health is advisory for shared-runtime sessions: OK");
 console.log("Buddy video lead SMS follow-up: OK");
-console.log("Buddy-owned video Worker and avatar agent boundary: OK");
+console.log("Buddy standalone tenant adapter and rollback boundary: OK");

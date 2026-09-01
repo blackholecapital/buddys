@@ -155,12 +155,6 @@ async function getBuddyRuntimeReadiness(env){
   return readiness;
 }
 
-async function requireBuddyRuntime(env){
-  const readiness=await getBuddyRuntimeReadiness(env);
-  if(!readiness.ok)throw new Error(`Buddy runtime is not ready: ${readiness.errors.join("; ")}`);
-  return readiness;
-}
-
 function buddyProductOptions(interest=""){
   const value=String(interest||"").toLowerCase();
   const category=value||"home furnishings";
@@ -236,7 +230,7 @@ async function requestBuddyVideoSession(env,payload={}){
   if(!capabilityToken)throw new Error("BLACKHOLE_CAPABILITY_TOKEN is not configured");
   const contactId=String(payload.contactId||payload.contact?.id||"").trim();
   const contactPromise=contactId?resolveContact(env,contactId,payload):Promise.resolve(mergeContact(payload.contact||{},payload.context||{}));
-  const [runtimeReadiness,contact]=await Promise.all([requireBuddyRuntime(env),contactPromise]);
+  const [runtimeReadiness,contact]=await Promise.all([getBuddyRuntimeReadiness(env),contactPromise]);
   const directSessionId=crypto.randomUUID();
   const productOptions=buddyProductOptions(contact.interest||payload.interest||payload.context?.interest||"");
   const workflow=buddyWorkflowState(contact,productOptions);
@@ -299,7 +293,7 @@ async function requestBuddyVideoSession(env,payload={}){
     ]);
   }
   await emit(env,{type:"video.session.created",contactId,room:data.room||"",dispatchId:data.dispatchId||"",source:payload.source||"buddy-web"});
-  return{ok:true,...data,contactId:contactId||undefined,workflow,runtime:{voiceId:runtimeReadiness.voiceId,llm:runtimeReadiness.llm}};
+  return{ok:true,...data,contactId:contactId||undefined,workflow,runtime:{ok:runtimeReadiness.ok,requiredForSession:false,adapter:"buddy-concierge",voiceId:runtimeReadiness.voiceId,llm:runtimeReadiness.llm,errors:runtimeReadiness.errors||[]}};
 }
 
 async function processProductSelection(env,payload={}){
@@ -337,8 +331,22 @@ export default { async fetch(request,env,ctx){
   const url=new URL(request.url);
   if(url.pathname==="/api/health")return Response.json({ok:true,service:"buddys-concierge-worker",health:"online",runtime:"edge",docusign:docusignConfigured(env)?"configured":"not-configured",googleCalendar:googleCalendarConfigured(env)?"configured":"not-configured",googleCalendarTimeZone:googleCalendarTimeZone(env)});
   if(url.pathname==="/api/video/readiness"){
-    const readiness=await getBuddyRuntimeReadiness(env);
-    return Response.json(readiness,{status:readiness.ok?200:503});
+    const runtime=await getBuddyRuntimeReadiness(env);
+    const brokerConfigured=Boolean(env.VIDEO&&typeof env.VIDEO.fetch==="function");
+    const capabilityConfigured=Boolean(await bindingValue(env.BLACKHOLE_CAPABILITY_TOKEN,500));
+    const ok=brokerConfigured&&capabilityConfigured;
+    return Response.json({
+      ok,
+      service:"buddys-live-video",
+      adapter:"buddy-concierge",
+      tenantId:"buddys",
+      runtimeRequiredForSession:false,
+      brokerConfigured,
+      capabilityConfigured,
+      runtime,
+      warnings:runtime.ok?[]:(runtime.errors||[]).map(error=>`public Buddy runtime advisory: ${error}`),
+      next:ok?"ready through Buddy's standalone tenant adapter":"configure Buddy's VIDEO binding and capability token",
+    },{status:ok?200:503});
   }
   if(url.pathname==="/docusign/consent-complete")return new Response("DocuSign consent granted. You can close this tab and return to Buddy.",{status:200,headers:{"Content-Type":"text/plain; charset=utf-8"}});
   if(url.pathname.startsWith("/docusign/sign/")&&request.method==="GET"){const token=decodeURIComponent(url.pathname.slice("/docusign/sign/".length));const row=await resolveSigningShortLink(env,token).catch(()=>null);if(!row?.target_url)return new Response("This signing link is unavailable.",{status:404});return Response.redirect(String(row.target_url),302);}

@@ -1,0 +1,33 @@
+name: Buddy Video Adapter
+
+on:
+  pull_request:
+    paths:
+      - "apps/blackhole-concierge-worker/**"
+      - "apps/video-worker/**"
+      - "apps/livekit-avatar-agent/**"
+      - "scripts/test-video-config.mjs"
+      - ".github/workflows/buddy-video-adapter.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/blackhole-concierge-worker/**"
+      - "apps/video-worker/**"
+      - "apps/livekit-avatar-agent/**"
+      - "scripts/test-video-config.mjs"
+      - ".github/workflows/buddy-video-adapter.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify Buddy standalone video adapter
+        run: node scripts/test-video-config.mjs
