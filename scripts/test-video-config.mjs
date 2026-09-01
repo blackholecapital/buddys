@@ -145,7 +145,7 @@ const degradedRuntimeBody = await degradedRuntimeResponse.json();
 assert.equal(degradedRuntimeResponse.status, 200);
 assert.equal(degradedRuntimeBody.runtime.ok, false);
 assert.equal(degradedRuntimeBody.runtime.requiredForSession, false);
-assert.match(degradedRuntimeBody.runtime.errors.join(" "), /voice 'buddy' is not available/);
+assert.match(degradedRuntimeBody.runtime.errors.join(" "), /voice 'leo' is not available/);
 assert.equal(videoCalledWithDegradedPublicRuntime, true);
 
 let videoLeadSms = null;
