@@ -55,10 +55,11 @@ dataset = "buddys_message_events"
 enabled = true
 head_sampling_rate = 1
 
-[[secrets_store_secrets]]
-binding = "BLACKHOLE_CAPABILITY_TOKEN"
-store_id = "00b34d29f2c94685b0f250dc5b1ee875"
-secret_name = "XYZ_DEMO_EILA_RUNTIME_TOKEN"
+# Match the proven AI Fans adapter contract exactly: this worker receives a
+# standard encrypted Worker secret named BLACKHOLE_CAPABILITY_TOKEN. It must
+# contain the same broker capability value used by the working AI Fans adapter.
+# Configure it with:
+#   npx wrangler secret put BLACKHOLE_CAPABILITY_TOKEN --config apps/blackhole-concierge-worker/wrangler.toml
 
 [secrets]
 required = ["INTERNAL_CALL_SECRET"]
