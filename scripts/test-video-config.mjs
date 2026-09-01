@@ -16,7 +16,8 @@ assert.match(videoConfig, /VIDEO_AGENT_NAME = "buddys-avatar"/);
 assert.match(videoConfig, /binding = "LIVEKIT_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LIVEKIT_API_KEY"/);
 assert.match(videoConfig, /binding = "LEMONSLICE_BUDDYS_API_KEY"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_LEMONSLICE_API_KEY"/);
 assert.match(videoConfig, /binding = "BLACKHOLE_BUDDYS_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "BUDDYS_VIDEO_CAPABILITY_TOKEN"/);
-assert.match(conciergeConfig, /binding = "BLACKHOLE_CAPABILITY_TOKEN"\s+store_id = "00b34d29f2c94685b0f250dc5b1ee875"\s+secret_name = "XYZ_DEMO_EILA_RUNTIME_TOKEN"/);
+assert.doesNotMatch(conciergeConfig, /secret_name = "XYZ_DEMO_EILA_RUNTIME_TOKEN"/);
+assert.match(conciergeConfig, /standard encrypted Worker secret named BLACKHOLE_CAPABILITY_TOKEN/);
 // Buddy's dedicated worker and agent remain standalone rollback assets.
 assert.match(agentSource, /TENANT_ID = "buddys"/);
 assert.match(agentSource, /AGENT_NAME = os\.getenv\("AGENT_NAME", "buddys-avatar"\)/);
