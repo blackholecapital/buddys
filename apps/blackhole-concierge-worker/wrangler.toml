@@ -20,7 +20,7 @@ BUDDY_AVATAR_PROMPT = "Use friendly, attentive upper-body movement and natural h
 [[d1_databases]]
 binding = "DB"
 database_name = "buddys-message-track-db"
-database_id = "__BUDDYS_MESSAGE_TRACK_DB_ID__"
+database_id = "34ef42d7-ccef-4ba4-b57c-ecabc5ad8f81"
 
 [[services]]
 binding = "SMS"
