@@ -60,6 +60,24 @@ must be confirmed available before the canonical migration command is run.
 If the shared plane or more than one tenant is red, stop and recover from the
 Command Center owner repository. Do not patch Buddy's around the outage.
 
+## Latest readiness result
+
+The unscoped Command Center gate was run from current `main` on 2026-09-03 UTC:
+
+| Gate | Result |
+|---|---|
+| New tenant onboarding | `READY` |
+| Legacy tenant migration | `BLOCKED` |
+| Shared runtime | Healthy |
+| AI Fans | Unhealthy: live health response is missing `healthContract`, `tenantId`, and `planeId` |
+| EILA Overwatch | Unhealthy: live readiness response is missing `healthContract`, `tenantId`, and `planeId` |
+
+AI Fans `main` already emits the required `blackhole-tenant-v1` identity, so
+its blocker is a stale tenant Worker deployment. EILA Overwatch `main` does not
+yet emit the required top-level readiness identity and needs a tenant-local PR.
+Neither prerequisite authorizes a Buddy task to change or deploy those tenants.
+The Buddy migration remains stopped at the readiness gate.
+
 ## No-downtime PR sequence
 
 1. In the Command Center, run the canonical `tenant:migrate` command for
@@ -89,4 +107,3 @@ Recorded on 2026-09-03 UTC:
 - Dashboard contract, async, integration, and security tests: 127 passed.
 - Video Worker tests: 4 passed after `npm ci`.
 - Frontend TypeScript/Vite production build: pass.
-
