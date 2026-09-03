@@ -1,5 +1,20 @@
 # Buddy's Demo — Next Pass
 
+## Shared-plane migration — preparation
+
+- [x] Record production rollback commit and existing named health targets
+- [x] Pass local video contract, dashboard, video-worker, and frontend build checks
+- [x] Mark the dedicated runtime/avatar deployment procedure as rollback-only
+- [ ] Pass the unscoped Command Center readiness gate
+- [ ] Confirm the shadow adapter hostname and create its operator-only Access application
+- [ ] Generate and mount the sealed `blackhole-runtime/` tenant kit
+- [ ] Deploy and verify the shadow without switching Buddy's production UI
+- [ ] Switch only Buddy's browser talking-head client, smoke test, and record cutover
+
+See [`MIGRATION-READINESS.md`](./MIGRATION-READINESS.md). The legacy Pass 2
+checklist below is retained as rollback evidence; it is not the current
+talking-head migration procedure.
+
 ## Pass 1 complete
 
 - [x] Copy the complete Alley Concierge snapshot into the dedicated Buddy's repository
