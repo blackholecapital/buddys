@@ -1,5 +1,14 @@
 # Buddy's Pass 2 deployment
 
+> **Legacy rollback procedure only.** Buddy's talking-head path is being
+> migrated to the sealed shared-plane tenant adapter. Do not run the runtime
+> installation, service restart, dedicated avatar-agent, or video-worker
+> deployment commands below as part of that migration. Use
+> [`MIGRATION-READINESS.md`](./MIGRATION-READINESS.md) and the authoritative
+> Command Center `MIGRATION.md`. Keep this file unchanged otherwise so commit
+> `b91013f10d09b5193fd248c38a2edec391596619` remains reproducible as the
+> production rollback point.
+
 The repository no longer points at Alley Concierge's Worker, D1, Queue, or Analytics Engine names. Run these steps from an authenticated Cloudflare environment.
 
 ## 1. Provision isolated data resources
