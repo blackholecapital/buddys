@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Buddy&#39;s assistant settings</title>
+  <style>
+    :root { color-scheme:dark; font-family:Inter,ui-sans-serif,system-ui,sans-serif; background:#060a10; color:#edf4ff; }
+    body { margin:0; padding:32px; background:radial-gradient(circle at 10% 0,#162946,transparent 38%),#060a10; }
+    main { width:min(900px,100%); margin:auto; }
+    p { color:#99aac1; line-height:1.55; }
+    blackhole-assistant-settings { margin-top:18px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Buddy&#39;s assistant settings</h1>
+    <p>Upload an avatar image and a 10–60 second WAV. The browser normalizes the voice file and the adapter activates only this tenant's declared voice ID.</p>
+      <blackhole-assistant-settings
+        tenant-id="buddys"
+        assistant-id="buddy"
+        display-name="Buddy"
+      ></blackhole-assistant-settings>
+  </main>
+  <script type="module" src="/assistant-settings.js"></script>
+</body>
+</html>

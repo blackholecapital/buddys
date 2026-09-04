@@ -1,5 +1,7 @@
 # Buddy's deployment boundary
 
+Before changing AI, avatar, voice, LiveKit, runtime, or deployment code, read and obey `blackhole-runtime/RUNTIME-BOUNDARY.md`.
+
 > **MANDATORY — READ BEFORE CHANGING OR DEPLOYING THIS REPOSITORY.**
 
 This repository is a sovereign, self-contained product module. It may consume the frozen shared EILA voice/video resource layer through its committed tenant adapter, but it does not own that shared runtime and must never reconfigure another product to make Buddy's work.
