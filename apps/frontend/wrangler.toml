@@ -6,3 +6,7 @@ pages_build_output_dir = "dist"
 [[services]]
 binding = "DASHBOARD"
 service = "buddys-dashboard-worker"
+
+[[services]]
+binding = "ASSISTANT"
+service = "buddys-assistant-adapter"
