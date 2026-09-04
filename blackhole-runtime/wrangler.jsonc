@@ -15,7 +15,8 @@
     "APP_ORIGIN": "https://buddys-assistant.xyz-labs.xyz",
     "RUNTIME_URL": "https://blackhole-runtime.xyz-labs.xyz",
     "CF_ACCESS_TEAM_DOMAIN": "https://xyzx-labs.cloudflareaccess.com",
-    "CF_ACCESS_AUD": "89757ca97858490ae62553589cd45044f82caec09dfac238698969f739bfc1a6"
+    "CF_ACCESS_AUD": "89757ca97858490ae62553589cd45044f82caec09dfac238698969f739bfc1a6",
+    "SETTINGS_AUTH_MODE": "public"
   },
   "r2_buckets": [
     {

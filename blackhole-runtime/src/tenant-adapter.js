@@ -272,7 +272,10 @@ export function createTenantAdapter({
   }
 
   async function updateSettings(request, env) {
-    const identity = await authorizeSettings(request, env);
+    const settingsAuthMode = String(env.SETTINGS_AUTH_MODE || "access").trim().toLowerCase();
+    const identity = settingsAuthMode === "public"
+      ? { email: "", subject: "public-settings" }
+      : await authorizeSettings(request, env);
     if (!identity) return json({ ok: false, code: "settings_forbidden" }, 403);
     if (!env.ASSISTANT_ASSETS?.put) return json({ ok: false, code: "asset_binding_missing" }, 503);
     const form = await request.formData();
@@ -388,6 +391,7 @@ export function createTenantAdapter({
           planeId: PLANE_ID,
           tenantId: manifest.tenant_id,
           adapterVersion: manifest.adapter_version,
+          settingsAuthMode: String(env.SETTINGS_AUTH_MODE || "access").trim().toLowerCase(),
           runtimeConfigured,
           runtimeTokenConfigured,
           capabilityTokenConfigured,
