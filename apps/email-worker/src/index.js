@@ -1,3 +1,4 @@
+import operatorAuth from "../../dashboard/shared/services/operator-auth.js";
 const RESEND_URL = "https://api.resend.com/emails";
 
 function esc(value = "") {
@@ -26,13 +27,14 @@ export default {
     if (url.pathname === "/api/health") return Response.json({ ok:true, service:"buddys-email-worker", provider:"resend", health:"online" });
     if (url.pathname !== "/internal/send" || request.method !== "POST") return Response.json({ ok:false, error:"Route not found" }, { status:404 });
 
+    if(!await operatorAuth.equalSecret(request.headers.get("x-internal-call-secret"),env.INTERNAL_CALL_SECRET))return Response.json({ok:false,error:"Unauthorized"},{status:401});
     const payload = await request.json();
     const contact = payload.contact || {};
     const lead = payload.lead || {};
     const contactId = String(payload.contactId || contact.id || "");
     const messageType = String(payload.messageType || "buddy-welcome");
     const callNowUrl = String(payload.callback?.callNowUrl || "").trim();
-    const signingUrl = String(payload.docusign?.signingUrl || payload.signingUrl || "").trim();
+    const signingUrl = String(payload.docusign?.shortSigningUrl || payload.docusign?.signingUrl || payload.signingUrl || "").trim();
     const productName = payload.product?.name || payload.productName || contact.selectedProduct || "your selected item";
     const delivery = payload.delivery || {};
 

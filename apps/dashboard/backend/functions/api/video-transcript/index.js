@@ -1,4 +1,4 @@
-const { sign, safeEqual } = require("../../../../shared/services/video-session-auth");
+const { verify } = require("../../../../shared/services/video-session-auth");
 const { readDb, mutate } = require("../../../layers/core/db");
 const contacts = require("../../../layers/domain/contacts");
 const activity = require("../../../layers/domain/activity");
@@ -22,13 +22,10 @@ module.exports = async function handler({ method, body, env }) {
   if (!contactId) return { ok:true, skipped:true, reason:"No lead is linked to this session" };
 
   const sessionId = String(body?.sessionId || "").trim();
-  const expectedToken = await sign(env.INTERNAL_CALL_SECRET, contactId, sessionId);
-  if (!expectedToken || !(await safeEqual(body?.workflowToken, expectedToken))) {
-    return { ok:false, error:"Invalid video workflow session" };
-  }
-
   const contact = readDb().contacts.find((row) => row && row.id === contactId);
-  if (!contact) return { ok:false, error:"Contact not found" };
+  if (!await verify(env.INTERNAL_CALL_SECRET, body?.workflowToken, contact, "workflow", sessionId)) {
+    return { ok:false, error:"Invalid or expired video workflow session" };
+  }
 
   const room = String(body?.room || "").trim().slice(0, 240);
   const ended = body?.ended === true;

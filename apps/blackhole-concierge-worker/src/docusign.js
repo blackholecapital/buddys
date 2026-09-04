@@ -275,6 +275,7 @@ export async function createBuddySigningSession(env, {
 
   signer.clientUserId = clientUserId;
   envelope.eventNotification.url = connectUrl;
+  envelope.eventNotification.includeHMAC = "true";
   envelope.eventNotification.eventData = {
     version:"restv2.1",
     format:"json",

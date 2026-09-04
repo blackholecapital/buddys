@@ -1,3 +1,4 @@
+const { issue } = require("../../../../shared/services/video-session-auth");
 const contacts = require("../../../layers/domain/contacts");
 const activity = require("../../../layers/domain/activity");
 const { conciergePost } = require("../../../../shared/services/concierge");
@@ -17,30 +18,17 @@ function scoreLead(body = {}) {
   return Math.min(score, 100);
 }
 
-function base64Url(bytes) {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-async function buildCallNowUrl(env, contactId) {
-  if (!env.INTERNAL_CALL_SECRET || !contactId) return "";
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(String(env.INTERNAL_CALL_SECRET)),
-    { name:"HMAC", hash:"SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`buddy-call:${contactId}`));
-  const sig = base64Url(new Uint8Array(signature));
-  const base = String(env.DASHBOARD_PUBLIC_URL || "https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev").replace(/\/$/, "");
-  return `${base}/api/call-now?id=${encodeURIComponent(contactId)}&sig=${encodeURIComponent(sig)}`;
+async function buildCallNowUrl(env, contact) {
+  const sig=await issue(env.INTERNAL_CALL_SECRET,contact,"call");
+  if(!sig)return "";
+  const base=String(env.DASHBOARD_PUBLIC_URL||"https://buddys-dashboard-worker.cryptocapitalgroupfl.workers.dev").replace(/\/$/,"");
+  return `${base}/api/call-now?id=${encodeURIComponent(contact.id)}&sig=${encodeURIComponent(sig)}`;
 }
 
 module.exports = async function handler({ method, body, env }) {
   if (method !== "POST") return { ok:false, error:"POST only" };
 
+  if (!env?.INTERNAL_CALL_SECRET) return { ok:false, error:"Customer session signing is not configured" };
   const leadScore = scoreLead(body);
   const preferredContactMethod = body.contact_method || body.preferredContactMethod || "";
 
@@ -75,7 +63,7 @@ module.exports = async function handler({ method, body, env }) {
     metadata:{ ...body, leadScore }
   });
 
-  const callNowUrl = contact.email ? await buildCallNowUrl(env, contact.id) : "";
+  const callNowUrl = contact.email ? await buildCallNowUrl(env, contact) : "";
 
   let concierge = null;
   try {
@@ -109,6 +97,7 @@ module.exports = async function handler({ method, body, env }) {
   return {
     ok:true,
     contact,
+    customerToken:await issue(env.INTERNAL_CALL_SECRET, contact, "customer"),
     leadScore,
     concierge,
     contactFlow: concierge?.contactFlow || null,

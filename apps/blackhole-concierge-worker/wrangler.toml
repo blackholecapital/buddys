@@ -63,4 +63,4 @@ head_sampling_rate = 1
 #   npx wrangler secret put BLACKHOLE_CAPABILITY_TOKEN --config apps/blackhole-concierge-worker/wrangler.toml
 
 [secrets]
-required = ["INTERNAL_CALL_SECRET"]
+required = ["INTERNAL_CALL_SECRET", "DOCUSIGN_CONNECT_HMAC_SECRET"]

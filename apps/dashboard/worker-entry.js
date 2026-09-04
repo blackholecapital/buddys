@@ -79,6 +79,8 @@ module.exports = {
    * HTTP fetch handler — API + webhook surface.
    */
   async fetch(request, workerEnv, ctx) {
+    const cors=require("./shared/services/cors");
+    if(!cors.allowedOrigin(request.headers.get("origin"),request.url,workerEnv))return Response.json({ok:false,error:"Origin not allowed"},{status:403});
     env.setBindings(workerEnv);
     await initPersistence(workerEnv);
     initQueue(workerEnv);
@@ -93,7 +95,7 @@ module.exports = {
       return new Response(null, {
         status: 204,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-store",
           "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Correlation-Id",
         },
@@ -115,7 +117,8 @@ module.exports = {
 
       logger.info("Request", { method, path: pathname, runtime: "edge" });
 
-      const authResult = permissions.enforce(method, pathname, headersObj);
+      if (!routeRequest(pathname,method)) return jsonResponse(404,{ok:false,error:"Route not found"},correlationId,requestId);
+      const authResult = await permissions.enforce(method, pathname, headersObj, { ...workerEnv, NODE_ENV:workerEnv.NODE_ENV || "production" });
       if (!authResult.allowed) {
         metrics.increment("http.forbidden");
         return jsonResponse(403, { ok: false, error: authResult.error }, correlationId, requestId);
@@ -201,7 +204,7 @@ function jsonResponse(status, payload, correlationId, requestId) {
     status,
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store",
       "X-Correlation-Id": correlationId || "",
       "X-Request-Id": requestId || "",
     },

@@ -3,8 +3,7 @@
  *
  * Provides middleware-style permission checks that can be used
  * across API handlers, worker jobs, and webhook paths.
- * Currently resolves the user from the DB (single-user stub);
- * in production this reads from an auth token.
+ * Production uses verified Access identity; local tests retain explicit role fixtures.
  */
 
 const { readDb } = require("../../backend/layers/core/db");
@@ -38,6 +37,7 @@ const PERMISSION_MAP = {
  * Route → required permission mapping.
  */
 const ROUTE_PERMISSIONS = {
+  "POST /api/calls": "contacts:write",
   "GET /api/dashboard": "dashboard:read",
   "GET /api/orchestrator": "dashboard:read",
   "GET /api/system-status": "dashboard:read",
@@ -76,10 +76,12 @@ const ROUTE_PERMISSIONS = {
 };
 
 /**
- * Resolve the current user. In production, extract from JWT/session.
- * For now, reads the first user from DB, with optional role override for tests.
+ * Verify production Access identity; permit fixtures only in explicit local modes.
  */
-function resolveUser(headers = {}) {
+async function resolveUser(headers = {}, config = {}) {
+  if (!["test", "development"].includes(config.NODE_ENV || process.env.NODE_ENV)) {
+    return require("../services/operator-auth").identity(headers, config);
+  }
   const requestedRole = String(headers["x-user-role"] || headers["X-User-Role"] || "").trim().toLowerCase();
   if (requestedRole === "anonymous") return { id: "anonymous", role: "anonymous" };
   if (requestedRole && PERMISSION_MAP[requestedRole]) return { id: `header_${requestedRole}`, role: requestedRole };
@@ -107,7 +109,7 @@ function resolvePermission(method, pathname) {
   if (exact !== undefined) return exact;
 
   // Normalize: strip trailing ID segments for CRUD routes
-  const basePath = pathname.replace(/\/[a-zA-Z0-9_]+$/, "");
+  const basePath = pathname.replace(/\/[a-zA-Z0-9_-]+$/, "");
   const baseMatch = ROUTE_PERMISSIONS[`${method} ${basePath}`];
   if (baseMatch !== undefined) return baseMatch;
 
@@ -120,8 +122,14 @@ function resolvePermission(method, pathname) {
 /**
  * Enforce permission for a request. Returns { allowed, user, error? }.
  */
-function enforce(method, pathname, headers = {}) {
-  const user = resolveUser(headers);
+async function enforce(method, pathname, headers = {}, config = {}) {
+  // Concierge gets only the contact operations it needs, never an operator role.
+  if ((method === "GET" && pathname === "/api/contacts") || (method === "PUT" && /^\/api\/contacts\/[^/]+$/.test(pathname))) {
+    if (await require("../services/operator-auth").equalSecret(headers["x-internal-call-secret"], config.INTERNAL_CALL_SECRET)) {
+      return { allowed:true, user:{id:"buddy-concierge",role:"service"} };
+    }
+  }
+  const user = await resolveUser(headers, config);
   const permission = resolvePermission(method, pathname);
 
   // Health endpoint — always allowed
@@ -130,7 +138,7 @@ function enforce(method, pathname, headers = {}) {
   // Unknown route
   if (permission === undefined) {
     logger.warn("Permission check for unknown route", { method, pathname });
-    return { allowed: true, user }; // Allow unknown routes to pass through to 404 handler
+    return { allowed: false, user, error:"Unknown API permission" };
   }
 
   if (!hasPermission(user, permission)) {

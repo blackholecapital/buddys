@@ -8,8 +8,11 @@ on:
       - "apps/livekit-avatar-agent/**"
       - "apps/frontend/**"
       - "apps/dashboard/**"
+      - "apps/sms-worker/**"
+      - "apps/email-worker/**"
       - "blackhole-runtime/**"
       - "scripts/test-video-commerce.mjs"
+      - "scripts/test-buddy-security.mjs"
       - "scripts/test-video-config.mjs"
       - ".github/workflows/buddy-video-adapter.yml"
   push:
@@ -20,8 +23,11 @@ on:
       - "apps/livekit-avatar-agent/**"
       - "apps/frontend/**"
       - "apps/dashboard/**"
+      - "apps/sms-worker/**"
+      - "apps/email-worker/**"
       - "blackhole-runtime/**"
       - "scripts/test-video-commerce.mjs"
+      - "scripts/test-buddy-security.mjs"
       - "scripts/test-video-config.mjs"
       - ".github/workflows/buddy-video-adapter.yml"
 
@@ -41,6 +47,8 @@ jobs:
         run: node scripts/test-video-config.mjs
       - name: Verify video commerce through Pages and the sealed adapter
         run: node --experimental-strip-types scripts/test-video-commerce.mjs
+      - name: Verify production security boundaries
+        run: node scripts/test-buddy-security.mjs
       - name: Verify dashboard contracts and bundle boundary
         run: npm test --prefix apps/dashboard && npm run validate:bundle --prefix apps/dashboard
       - name: Validate sealed tenant kit
