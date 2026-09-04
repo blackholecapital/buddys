@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "plane_id": "blackhole.shared-ai",
+  "tenant_id": "buddys",
+  "adapter_version": "1.1.0",
+  "sealed_files": {
+    "src/index.js": "8847d89a4abaff56dfc247edec337c9bfb85b6e58cfbe97097bc009bd1b26d44",
+    "src/tenant-adapter.js": "d503fed0d46cf140f1274f9a5054c46bb975ef5c4f0dfe1ff1fb809d72a608bd",
+    "src/tenant.manifest.json": "4f449309b28ac9f34e99c5a95544e546e2b41e39b63285fc07ad3a75f145930b",
+    "public/assistant-settings.js": "ddf86aa442b9aa89ca4f6e6423bb413510339b9303ad1f2f5d9abfdffa8cdcb3",
+    "public/tenant-runtime-client.js": "6180af5cccf42196cd05c20fbc0fdf835a6c8ab4a98e6f60e8defde1a9ca08db",
+    "public/settings.html": "254f6bf7c31df92340bf6b2d56e80b97f61d31fc444e5b1ba1b6fb8c3a691038",
+    "wrangler.jsonc": "19eb964b55e9627e562963e94c94125814754442a3f30570db5ccac206682047",
+    "package.json": "2fad9b76ba0db1ed9ac90cad5c49cd344de7074335204051518b5bd7a5a62b22",
+    "deploy.sh": "733677b8bd16365d15151311544c522a56c74a5dafb02324c73f1ee2d68a77fb",
+    "DEPLOY.md": "aa91001ff88a7075b99955f360a6c8fde935644840412be45e97ecea6416bc30",
+    "RUNTIME-BOUNDARY.md": "11aa2fbec7fd63855ac4204d8ec55cc13c4416931cebeb044d784e4319f9df08",
+    "scripts/validate-kit.mjs": "14864937591b8cf433bd5da7f3dd199a352ca31830f90d3a331894808bbe3091"
+  }
+}
