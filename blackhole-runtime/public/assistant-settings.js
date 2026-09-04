@@ -37,8 +37,8 @@ async function normalizeVoiceReference(file) {
   const context = new AudioContextClass();
   try {
     const decoded = await context.decodeAudioData(await file.arrayBuffer());
-    if (decoded.duration < 10 || decoded.duration > 60) {
-      throw new Error("Voice reference must be between 10 and 60 seconds");
+    if (decoded.duration < 4 || decoded.duration > 60) {
+      throw new Error("Voice reference must be between 4 and 60 seconds");
     }
     const frameCount = Math.ceil(decoded.duration * 24_000);
     const offline = new OfflineContextClass(1, frameCount, 24_000);
@@ -88,7 +88,7 @@ class BlackholeAssistantSettings extends HTMLElement {
           </label>
           <label>Reference voice
             <input name="voiceReference" type="file" accept="audio/wav,.wav" />
-            <small>10–60 second WAV · normalized automatically · maximum 25 MiB</small>
+            <small>4–60 second WAV · normalized automatically · maximum 25 MiB</small>
           </label>
         </div>
         <button type="submit">Save assets</button>
