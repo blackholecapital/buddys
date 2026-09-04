@@ -6,6 +6,10 @@ on:
       - "apps/blackhole-concierge-worker/**"
       - "apps/video-worker/**"
       - "apps/livekit-avatar-agent/**"
+      - "apps/frontend/**"
+      - "apps/dashboard/**"
+      - "blackhole-runtime/**"
+      - "scripts/test-video-commerce.mjs"
       - "scripts/test-video-config.mjs"
       - ".github/workflows/buddy-video-adapter.yml"
   push:
@@ -14,6 +18,10 @@ on:
       - "apps/blackhole-concierge-worker/**"
       - "apps/video-worker/**"
       - "apps/livekit-avatar-agent/**"
+      - "apps/frontend/**"
+      - "apps/dashboard/**"
+      - "blackhole-runtime/**"
+      - "scripts/test-video-commerce.mjs"
       - "scripts/test-video-config.mjs"
       - ".github/workflows/buddy-video-adapter.yml"
 
@@ -31,3 +39,11 @@ jobs:
           node-version: "22"
       - name: Verify Buddy standalone video adapter
         run: node scripts/test-video-config.mjs
+      - name: Verify video commerce through Pages and the sealed adapter
+        run: node --experimental-strip-types scripts/test-video-commerce.mjs
+      - name: Verify dashboard contracts and bundle boundary
+        run: npm test --prefix apps/dashboard && npm run validate:bundle --prefix apps/dashboard
+      - name: Validate sealed tenant kit
+        run: npm run validate --prefix blackhole-runtime
+      - name: Build customer frontend
+        run: npm ci --prefix apps/frontend && npm run build --prefix apps/frontend

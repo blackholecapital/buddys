@@ -1,3 +1,4 @@
+const { sign, safeEqual } = require("../../../../shared/services/video-session-auth");
 const { readDb, mutate } = require("../../../layers/core/db");
 const contacts = require("../../../layers/domain/contacts");
 const activity = require("../../../layers/domain/activity");
@@ -20,11 +21,16 @@ module.exports = async function handler({ method, body, env }) {
   const contactId = String(body?.contactId || "").trim();
   if (!contactId) return { ok:true, skipped:true, reason:"No lead is linked to this session" };
 
+  const sessionId = String(body?.sessionId || "").trim();
+  const expectedToken = await sign(env.INTERNAL_CALL_SECRET, contactId, sessionId);
+  if (!expectedToken || !(await safeEqual(body?.workflowToken, expectedToken))) {
+    return { ok:false, error:"Invalid video workflow session" };
+  }
+
   const contact = readDb().contacts.find((row) => row && row.id === contactId);
   if (!contact) return { ok:false, error:"Contact not found" };
 
   const room = String(body?.room || "").trim().slice(0, 240);
-  const sessionId = String(body?.sessionId || room || `video-${Date.now()}`).trim().slice(0, 240);
   const ended = body?.ended === true;
   const transcript = (Array.isArray(body?.messages) ? body.messages : [])
     .slice(0, 100)
@@ -98,7 +104,7 @@ module.exports = async function handler({ method, body, env }) {
       source:"buddy-livekit-web",
     });
     if (contact.callStatus !== "Video completed") {
-      contacts.update(contactId, { stage:"Engaged", callStatus:"Video completed" });
+      contacts.update(contactId, { callStatus:"Video completed" });
       activity.record({
         type:"video.completed",
         entityType:"contact",
