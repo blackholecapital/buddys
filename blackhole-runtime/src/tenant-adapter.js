@@ -146,8 +146,8 @@ function inspectVoiceWav(buffer) {
   if (format.encoding !== 1 || format.channels !== 1 || format.sampleRate !== 24_000 || format.bitsPerSample !== 16) {
     throw new Error("voiceReference must be mono PCM16 at 24 kHz");
   }
-  if (durationSeconds < 10 || durationSeconds > 60) {
-    throw new Error("voiceReference must be between 10 and 60 seconds");
+  if (durationSeconds < 4 || durationSeconds > 60) {
+    throw new Error("voiceReference must be between 4 and 60 seconds");
   }
   return { durationSeconds, sampleRate: format.sampleRate, channels: format.channels };
 }
