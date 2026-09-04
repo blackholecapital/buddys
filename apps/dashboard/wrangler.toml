@@ -65,6 +65,10 @@ DB_BACKEND = "memory"
 binding = "CONCIERGE"
 service = "buddys-concierge-worker"
 
+[[services]]
+binding = "ASSISTANT"
+service = "buddys-assistant-adapter"
+
 [observability]
 enabled = true
 head_sampling_rate = 1

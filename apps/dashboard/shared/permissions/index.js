@@ -68,7 +68,7 @@ const ROUTE_PERMISSIONS = {
   "POST /api/leads": null, // Public Buddy lead capture
   "GET /api/call-now": null, // Signed public callback URL
   "POST /api/video/session": null, // Public demo, guarded by server-side rate limits
-  "POST /api/video/transcript": null, // Public session transcript, validated against a Buddy lead
+  "POST /api/video/transcript": null, // Public session transcript, validated with the signed contact/session token
   "POST /api/video/action": null, // Signed public Buddy video workflow action
   "GET /api/buddy-events": "inbox:read",
   "GET /api/reconciliation": "settings:read",
