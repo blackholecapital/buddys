@@ -85,7 +85,7 @@ function normalizeMessage(input = {}) {
     contactId: ensureString(input.contactId),
     campaignId: ensureString(input.campaignId),
     conversationId: ensureString(input.conversationId),
-    channel: CHANNELS.includes(input.channel) ? input.channel : "sms",
+    channel: [...CHANNELS, "chat"].includes(input.channel) ? input.channel : "sms",
     direction: input.direction === "inbound" ? "inbound" : "outbound",
     providerMessageId: ensureString(input.providerMessageId),
     body: ensureString(input.body),

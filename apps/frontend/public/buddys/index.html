@@ -85,7 +85,8 @@
         <div class="radio-row">
           <label><input type="radio" name="contact_method" value="Phone" required> Phone</label>
           <label><input type="radio" name="contact_method" value="Email"> Email</label>
-          <label><input type="radio" name="contact_method" value="Text"> Text</label>
+          <label><input type="radio" name="contact_method" value="Text"> SMS Text</label>
+          <label><input type="radio" name="contact_method" value="Message"> Message Buddy here</label>
           <label><input type="radio" name="contact_method" value="Video"> Live Video</label>
         </div>
       </fieldset>
@@ -189,7 +190,7 @@
   }
   function syncSubmitLabel() {
     const method = methodInputs.find((input) => input.checked)?.value || "";
-    if (!button.disabled) button.textContent = method === "Video" ? "Submit & Start Video Chat" : "Request Information";
+    if (!button.disabled) button.textContent = method === "Video" ? "Submit & Start Video Chat" : method === "Message" ? "Submit & Message Buddy" : "Request Information";
   }
   methodInputs.forEach((input) => input.addEventListener("change", () => {
     syncConsentRequirement();
@@ -235,10 +236,13 @@
       syncConsentRequirement();
       status.className = "form-status success";
 
-      if (requestedContactMethod === "Video") {
-        status.textContent = "Thanks. Your preferences are saved and Buddy's live video room is opening now.";
-        window.dispatchEvent(new CustomEvent("buddy:video-requested", {
+      if (requestedContactMethod === "Video" || requestedContactMethod === "Message") {
+        status.textContent = requestedContactMethod === "Video"
+          ? "Thanks. Your preferences are saved and Buddy's live video room is opening now."
+          : "Thanks. Your preferences are saved and Buddy's messages are opening now.";
+        window.dispatchEvent(new CustomEvent("buddy:conversation-requested", {
           detail: {
+            startVideo: requestedContactMethod === "Video",
             contactId: result?.contact?.id || "",
             customerToken: result?.customerToken || "",
             firstName: data.first_name || "",
@@ -272,7 +276,6 @@
   });
 })();
 </script>
-<script src="https://unpkg.com/livekit-client@2.22.1/dist/livekit-client.umd.js"></script>
 <script src="./video.js"></script>
 </body>
 </html>

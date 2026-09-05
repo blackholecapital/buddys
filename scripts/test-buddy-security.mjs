@@ -31,6 +31,10 @@ async function request(path,headers={},method='GET') {
 let checks=0;
 async function expectStatus(path,headers,status,method='GET') {assert.equal((await request(path,headers,method)).status,status);checks++;}
 try {
+  await expectStatus('/api/chat/session',{},200,'POST');
+  await expectStatus('/api/chat/message',{},400,'POST');
+  await expectStatus('/api/chat/message',{origin:'https://evil.test'},403,'POST');
+  await expectStatus('/api/chat/session',{},403,'GET');
   await expectStatus('/api/contacts',{},403);
   await expectStatus('/api/contacts',{'x-user-role':'admin','cf-access-authenticated-user-email':'admin@example.test'},403);
   const valid=token();
