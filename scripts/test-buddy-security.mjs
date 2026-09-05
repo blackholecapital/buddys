@@ -31,6 +31,10 @@ async function request(path,headers={},method='GET') {
 let checks=0;
 async function expectStatus(path,headers,status,method='GET') {assert.equal((await request(path,headers,method)).status,status);checks++;}
 try {
+  await expectStatus('/api/showroom?category=Smartphones',{},200);
+  await expectStatus('/api/showroom',{},400,'POST');
+  await expectStatus('/api/showroom',{},403,'DELETE');
+  await expectStatus('/api/showroom',{origin:'https://evil.test'},403);
   await expectStatus('/api/chat/session',{},200,'POST');
   await expectStatus('/api/chat/message',{},400,'POST');
   await expectStatus('/api/chat/message',{origin:'https://evil.test'},403,'POST');

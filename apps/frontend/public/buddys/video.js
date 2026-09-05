@@ -40,6 +40,8 @@
   let sessionMeta = { contactId:"", room:"", sessionId:"", workflowToken:"" };
   let sessionTranscript = [];
   let transcriptTimer = null;
+  let showroomState = {products:[],categories:[],category:""};
+  const showroomEvents = new Set();
   let workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null, resumePrompt:"", announced:false };
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -178,6 +180,7 @@
   async function chooseDelivery(optionIndex) {
     if (workflow.phase !== "awaiting-delivery" || workflow.busy) return;
     workflow.busy = true;
+    window.BuddyShowroom?.setBusy(true);
     clearWorkflowCards();
     try {
       const result = await postWorkflowAction("delivery-schedule", { optionIndex });
@@ -194,6 +197,7 @@
       renderDeliveryChoices();
     } finally {
       workflow.busy = false;
+      window.BuddyShowroom?.setBusy(false);
     }
   }
 
@@ -221,6 +225,7 @@
       addBubble(error instanceof Error ? error.message : "Delivery choices are unavailable.", "system");
     } finally {
       workflow.busy = false;
+      window.BuddyShowroom?.setBusy(false);
     }
   }
 
@@ -245,10 +250,13 @@
     const option = workflow.productOptions[optionIndex];
     if (!option) return;
     workflow.busy = true;
+    window.BuddyShowroom?.setBusy(true);
     clearWorkflowCards();
     try {
-      const result = await postWorkflowAction("product-selected", { optionIndex });
+      const result = await postWorkflowAction("product-selected", { optionIndex,productId:option.id,catalogVersion:option.catalogVersion });
       workflow.phase = "awaiting-signature";
+      workflow.selectedProduct = result.product?.name || option.name;
+      renderProductChoices();
       const signingUrl = result?.docusign?.shortSigningUrl || "";
       addBubble(`${option.name} selected. Your DocuSign agreement is ready. Use the signing link so we can schedule delivery.`, "system");
       if (signingUrl) addResource(signingUrl);
@@ -260,25 +268,84 @@
       renderProductChoices();
     } finally {
       workflow.busy = false;
+      window.BuddyShowroom?.setBusy(false);
     }
+  }
+
+  function reportShowroomEvent(event, product) {
+    const auth = room && agentReady ? sessionMeta : chatMeta;
+    if (!auth) return;
+    const key = `${auth.sessionId}:${event}:${product.id}`;
+    if (showroomEvents.has(key)) return;
+    showroomEvents.add(key);
+    void fetch("/api/showroom", {method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({...auth,event,productId:product.id,category:product.category,catalogVersion:product.catalogVersion}),
+    }).then(async response => { const data = await response.json(); if (!response.ok || !data.ok) showroomEvents.delete(key); })
+      .catch(() => showroomEvents.delete(key));
+  }
+
+  async function openPreferences(category) {
+    await closeWorkspace();
+    const form = document.getElementById("demoForm");
+    const interest = form?.querySelector('[name="product_interest"]');
+    if (interest) interest.value = category;
+    const method = form?.querySelector('[name="contact_method"][value="Message"]');
+    if (method) { method.checked = true; method.dispatchEvent(new Event("change",{bubbles:true})); }
+    form?.scrollIntoView({behavior:"smooth",block:"start"});
+    form?.querySelector('input')?.focus({preventScroll:true});
   }
 
   function renderProductChoices() {
     clearWorkflowCards();
-    workflow.productOptions.forEach((option, index) => {
-      addWorkflowCard(`${index + 1}. ${option.name}`, "Select this option and send DocuSign", () => void chooseProduct(index));
-    });
+    const auth = room && agentReady ? sessionMeta : chatMeta;
+    window.BuddyShowroom?.render({...showroomState,
+      canSelect:Boolean(auth?.workflowToken),busy:workflow.busy,
+      locked:!["idle","guest","browsing","awaiting-product"].includes(workflow.phase),
+      selectedProduct:workflow.selectedProduct || "",
+    },{onSelect:index=>void chooseProduct(index),onCategory:category=>void changeCategory(category),
+      onEvent:reportShowroomEvent,onLead:category=>void openPreferences(category)});
+  }
+
+  async function loadGuestShowroom(category = pendingContext.interest || "Living Room Furniture") {
+    const response = await fetch(`/api/showroom?category=${encodeURIComponent(category)}`);
+    const data = await response.json().catch(()=>({}));
+    if (!response.ok || !data.ok) throw new Error("The showroom is unavailable. You can still message Buddy.");
+    showroomState = {products:data.products || [],categories:data.categories || [],category:data.category || ""};
+    renderProductChoices();
+  }
+
+  async function changeCategory(category) {
+    if (workflow.busy) return;
+    workflow.busy = true;
+    window.BuddyShowroom?.setBusy(true);
+    try {
+      const auth = room && agentReady ? sessionMeta : chatMeta;
+      if (auth?.workflowToken) {
+        const result = await postWorkflowAction("category-selected",{category});
+        prepareWorkflow(result.workflow);
+        await sendWorkflowUpdate(result.workflow.resumePrompt);
+      } else {
+        await loadGuestShowroom(category);
+        pendingContext.interest = category;
+        saveContext();
+      }
+    } catch(error) { addBubble(error.message,"system"); }
+    finally { workflow.busy = false; window.BuddyShowroom?.setBusy(false); }
   }
 
   function prepareWorkflow(nextWorkflow) {
     workflow.productOptions = Array.isArray(nextWorkflow?.productOptions) ? nextWorkflow.productOptions.slice(0, 2) : [];
+    showroomState = {products:workflow.productOptions,categories:nextWorkflow?.categories || showroomState.categories,category:nextWorkflow?.category || ""};
+    workflow.selectedProduct = nextWorkflow?.selectedProduct || "";
     workflow.resumePrompt = String(nextWorkflow?.resumePrompt || "").trim();
     workflow.announced = false;
     stopWorkflowPolling();
     clearWorkflowCards();
-    if (!(room && agentReady ? sessionMeta : chatMeta)?.workflowToken) { workflow.phase = "guest"; return; }
+    if (!(room && agentReady ? sessionMeta : chatMeta)?.workflowToken) { workflow.phase = "guest"; void loadGuestShowroom().catch(error=>addBubble(error.message,"system")); return; }
 
     const phase = String(nextWorkflow?.phase || "awaiting-product");
+    workflow.phase = phase;
+    renderProductChoices();
     if (phase === "complete") {
       workflow.phase = "complete";
       const deliveryAt = String(nextWorkflow?.deliveryAt || "").trim();
@@ -315,6 +382,10 @@
   }
 
   async function handleCustomerWorkflowMessage(text) {
+    // Asking about an option is browsing, not authorization to create an agreement.
+    const choosing = /^(?:1|2|3|one|two|three|first|second|third)(?: please)?[.!]?$/i.test(text.trim()) ||
+      /\b(?:i['’]?ll take|i choose|i pick|i select|go with|select option|choose option|take option)\b/i.test(text);
+    if (!choosing || /\?/.test(text)) return;
     if (workflow.phase === "awaiting-product") {
       const choice = productChoiceFromText(text);
       if (choice >= 0) await chooseProduct(choice);
@@ -789,6 +860,9 @@
   hangupButton.addEventListener("click", closeWorkspace);
   modal.addEventListener("click", (event) => { if (event.target === modal) closeWorkspace(); });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !modal.classList.contains("hidden")) closeWorkspace();
+    if (event.key === "Escape" && !modal.classList.contains("hidden")) {
+      if (window.BuddyShowroom?.closeDetails()) return;
+      closeWorkspace();
+    }
   });
 })();

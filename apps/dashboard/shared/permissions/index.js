@@ -67,6 +67,8 @@ const ROUTE_PERMISSIONS = {
   "GET /api/health": null, // No auth required
   "POST /api/leads": null, // Public Buddy lead capture
   "GET /api/call-now": null, // Signed public callback URL
+  "GET /api/showroom": null, // Public curated catalog only
+  "POST /api/showroom": null, // Signed exposure events checked by handler
   "POST /api/chat/session": null, // Signed customer or private guest thread
   "POST /api/chat/message": null, // Purpose-bound chat capability checked by handler
   "POST /api/video/session": null, // Public demo, guarded by server-side rate limits

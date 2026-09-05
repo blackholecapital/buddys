@@ -53,11 +53,13 @@ Implementation, validation and deployment requirements: [PASS-3-MESSAGING.md](PA
 
 Exit: text-only selling works without GPU/video; upgrade and reconnect retain state.
 
-## Pass 4 — Showroom V1
+## Pass 4 — Showroom V1 (implemented, pending deployment and product asset approval)
 
-- Structure the existing two choices with approved images, descriptions, specs, product links and optional confirmed pricing labels.
-- Build two product cards with expanded product view, showroom background and small Buddy video panel.
-- Emit product shown/opened/selected events and connect selections to the existing agreement/delivery actions.
+- Structured two-choice catalog, labeled category illustrations, descriptions and known demo specifications are implemented. Exact product photography, product URLs and pricing remain unset pending approval; no inventory feed is claimed.
+- Two product cards, expanded details, category browsing, showroom styling and a compact Buddy video panel are implemented.
+- Signed shown/opened events and server-confirmed selected events are persisted; selections use existing agreement/delivery actions and reject stale product/category choices.
+
+Details and server-side Cloudflare inventory commands: [PASS-4-SHOWROOM.md](PASS-4-SHOWROOM.md).
 
 Exit: category browsing and selection work on desktop/mobile using approved product facts/assets.
 
