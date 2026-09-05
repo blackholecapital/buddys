@@ -170,7 +170,8 @@
       const result = await postWorkflowAction("delivery-schedule", { optionIndex });
       const label = result?.delivery?.label || workflow.deliveryOptions[optionIndex]?.label || "your selected time";
       workflow.phase = "complete";
-      addBubble(`Delivery scheduled for ${label}. A confirmation was sent by text and email.`, "system");
+      addBubble(`Delivery scheduled for ${label}.`, "system");
+      if ((result.sms?.ok === false && !result.sms?.skipped) || (result.email?.ok === false && !result.email?.skipped)) addBubble("Delivery is booked, but a confirmation message could not be sent. Please save your delivery details.", "system");
       if (result?.delivery?.htmlLink) addResource(result.delivery.htmlLink);
       await sendWorkflowUpdate(`Delivery scheduling succeeded for ${label}. Confirm it warmly and say goodbye.`);
       stopWorkflowPolling();
@@ -236,9 +237,9 @@
       const result = await postWorkflowAction("product-selected", { optionIndex });
       workflow.phase = "awaiting-signature";
       const signingUrl = result?.docusign?.shortSigningUrl || "";
-      addBubble(`${option.name} selected. The DocuSign agreement was sent to your phone and email. Please sign it so we can schedule delivery.`, "system");
+      addBubble(`${option.name} selected. Your DocuSign agreement is ready. Use the signing link so we can schedule delivery.`, "system");
       if (signingUrl) addResource(signingUrl);
-      await sendWorkflowUpdate(`Product selection succeeded for ${option.name}. The DocuSign agreement was sent. Ask the customer to sign it, then wait for confirmation.`);
+      await sendWorkflowUpdate(`Product selection succeeded for ${option.name}. The DocuSign agreement is ready at the shared signing link. Ask the customer to sign it, then wait for confirmation.`);
       startSignaturePolling();
     } catch (error) {
       workflow.phase = "awaiting-product";
@@ -277,7 +278,7 @@
     if (phase === "awaiting-signature") {
       workflow.phase = "awaiting-signature";
       const product = String(nextWorkflow?.selectedProduct || "the selected item");
-      addBubble(`${product} is already selected and the DocuSign agreement has already been sent.`, "system");
+      addBubble(`${product} is already selected and the DocuSign agreement is ready.`, "system");
       if (nextWorkflow?.signingUrl) addResource(nextWorkflow.signingUrl);
       startSignaturePolling();
       return;
@@ -360,7 +361,8 @@
         body:JSON.stringify(payload),
         keepalive:ended,
       });
-      if (!response.ok) console.warn("Buddy: transcript persistence failed", response.status);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.ok === false) console.warn("Buddy: transcript persistence failed", result.error || response.status);
     } catch (error) {
       console.warn("Buddy: transcript persistence failed", error);
     }

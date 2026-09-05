@@ -21,7 +21,7 @@ function videoHistory(contactId) {
   return { messages };
 }
 
-const { sign: workflowToken } = require("../../../../shared/services/video-session-auth");
+const { issue, verify } = require("../../../../shared/services/video-session-auth");
 
 module.exports = async function handler({ method, body, env }) {
   if (method !== "POST") return { ok:false, error:"POST only" };
@@ -34,7 +34,9 @@ module.exports = async function handler({ method, body, env }) {
     ? readDb().contacts.find((row) => row && row.id === contactId) || null
     : null;
 
-  if (contactId && !contact) return { ok:false, error:"Contact not found" };
+  if (contactId && (!contact || !await verify(env?.INTERNAL_CALL_SECRET,body?.customerToken,contact,"customer"))) {
+    return { ok:false, error:"Customer session expired or invalid. Submit your preferences again." };
+  }
 
   const context = contact || {
     firstName:String(body?.firstName || "").slice(0,80),
@@ -89,7 +91,7 @@ module.exports = async function handler({ method, body, env }) {
         ].join("\n"),
       },
       history:videoHistory(contactId),
-      workflowToken:await workflowToken(env.INTERNAL_CALL_SECRET, contactId, sessionId),
+      workflowToken:await issue(env.INTERNAL_CALL_SECRET, contact, "workflow", sessionId),
     };
   } catch (error) {
     return { ok:false, error:error.message || "Unable to create Buddy video room" };

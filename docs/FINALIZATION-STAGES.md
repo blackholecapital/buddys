@@ -28,14 +28,16 @@ This is handler integration coverage, not a browser DOM/media end-to-end test. I
 4. Run a controlled test lead: verify contact/session/workflow fields, two products, actual Buddy avatar participation, document sending/signing, three delivery choices, scheduled CRM state and persisted transcript after closing/reopening.
 5. Confirm every resource remains Buddy-owned and the media tenant is `buddys`. No shared runtime changes or deployments are required. The sealed adapter does not need redeployment for this pass.
 
-## Pass 2 — Security and honest provider failures
+## Pass 2 — Security and honest provider failures (implemented, pending deployment)
 
-Before external testing:
+Implementation and deployment requirements: [PASS-2-SECURITY.md](PASS-2-SECURITY.md). Production identity, signed customer sessions, Connect validation/replay handling, protected document/send endpoints and provider failure handling are locally verified. Live Access/provider configuration and acceptance are still required.
+
+Scope covered by this pass:
 
 - Replace caller-selected `x-user-role` with validated Access/session identity and real role mappings; restrict dashboard CORS.
 - Protect tenant settings, currently configured public, using the supported Access configuration.
 - Authorize public lead/session access: a known contact ID alone must not grant someone another customer's history or a fresh workflow token. Add token expiry/revocation and replay policy.
-- Validate DocuSign Connect callbacks and envelope/contact association. Current `/docusign/connect` accepts a completed payload without signature validation; the Pass 1 test simulates that callback but does not certify it safe. Protect signed-document downloads too.
+- Validate DocuSign Connect callbacks and envelope/contact association. The route now rejects unsigned or mismatched callbacks; the integration test uses HMAC-signed fixtures and rejects tampering/replays. Signed-document downloads require operator/internal authorization.
 - Production providers must fail closed; surface partial sending failures, retries and idempotency without claiming delivery succeeded.
 - Verify internal service identity remains compatible when locking down dashboard contact reads/writes used by Concierge.
 

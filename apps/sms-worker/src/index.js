@@ -1,3 +1,4 @@
+import operatorAuth from "../../dashboard/shared/services/operator-auth.js";
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
     status,
@@ -99,6 +100,7 @@ export default {
     }
 
     if (url.pathname === "/internal/send" && request.method === "POST") {
+      if(!await operatorAuth.equalSecret(request.headers.get("x-internal-call-secret"),env.INTERNAL_CALL_SECRET))return json({ok:false,error:"Unauthorized"},401);
       const payload = await request.json().catch(() => ({}));
       return sendSms(env, payload);
     }

@@ -15,4 +15,4 @@ head_sampling_rate = 1
 enabled = true
 
 [secrets]
-required = ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER"]
+required = ["INTERNAL_CALL_SECRET", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER"]

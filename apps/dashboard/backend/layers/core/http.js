@@ -1,7 +1,7 @@
 const { sanitizePayload } = require("../../../shared/sanitize");
 
 function json(res, status, payload) {
-  res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+  res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
   res.end(JSON.stringify(payload, null, 2));
 }
 

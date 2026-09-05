@@ -72,6 +72,10 @@ async function start(port) {
   ensureSeed();
 
   const server = http.createServer(async (req, res) => {
+    const cors=require("../shared/services/cors");
+    const requestUrl=`http://${req.headers.host || "localhost"}${req.url}`;
+    if(!cors.allowedOrigin(req.headers.origin,requestUrl,process.env))return json(res,403,{ok:false,error:"Origin not allowed"});
+    for(const [key,value] of Object.entries(cors.headers(req.headers.origin)))res.setHeader(key,value);
     if (shuttingDown) {
       res.writeHead(503, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: false, error: "Server is shutting down" }));
@@ -80,7 +84,7 @@ async function start(port) {
 
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
-        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-store",
         "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Correlation-Id"
       });
@@ -98,7 +102,8 @@ async function start(port) {
 
         logger.info("Request", { method: req.method, path: parsed.pathname });
 
-        const authResult = permissions.enforce(req.method, parsed.pathname, req.headers || {});
+        if (!route(req)) return json(res,404,{ok:false,error:"Route not found"});
+        const authResult = await permissions.enforce(req.method, parsed.pathname, req.headers || {}, process.env);
         if (!authResult.allowed) {
           metrics.increment("http.forbidden");
           return json(res, 403, { ok: false, error: authResult.error });

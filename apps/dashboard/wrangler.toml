@@ -19,6 +19,9 @@ LOG_LEVEL = "info"
 LOG_FORMAT = "json"
 DB_BACKEND = "d1"
 RUNTIME_TARGET = "edge"
+# Set CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_AUD and OPERATOR_ROLES_JSON in the
+# deployment environment before enabling operator access. Unconfigured = denied.
+ALLOWED_ORIGINS = "https://buddys.pages.dev,https://buddys-4nm.pages.dev"
 
 # --- Dashboard D1 Database ---
 [[d1_databases]]

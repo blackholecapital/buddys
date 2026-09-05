@@ -10,6 +10,7 @@ import { routeRequest } from "./backend/edge-router.js";
 import env from "./shared/env/index.js";
 import logger from "./shared/logger/index.js";
 import metrics from "./shared/metrics/index.js";
+import cors from "./shared/services/cors.js";
 import permissions from "./shared/permissions/index.js";
 import db from "./backend/layers/core/db.js";
 import d1Cached from "./backend/layers/core/d1-cached-store.js";
@@ -69,7 +70,7 @@ function jsonResponse(status, payload, correlationId, requestId) {
     status,
     headers:{
       "Content-Type":"application/json",
-      "Access-Control-Allow-Origin":"*",
+      "Cache-Control":"no-store",
       "X-Correlation-Id":correlationId || "",
       "X-Request-Id":requestId || "",
     },
@@ -78,7 +79,9 @@ function jsonResponse(status, payload, correlationId, requestId) {
 
 export default {
   async fetch(request, workerEnv, ctx) {
-    return withPersistenceLock(async () => {
+    const origin=request.headers.get("origin");
+    if(!cors.allowedOrigin(origin,request.url,workerEnv))return Response.json({ok:false,error:"Origin not allowed"},{status:403});
+    const result=await withPersistenceLock(async () => {
     env.setBindings(workerEnv);
     await initPersistence(workerEnv);
     initQueue(workerEnv);
@@ -89,7 +92,7 @@ export default {
 
     if (method === "OPTIONS") {
       return new Response(null, { status:204, headers:{
-        "Access-Control-Allow-Origin":"*",
+        "Cache-Control":"no-store",
         "Access-Control-Allow-Methods":"GET,POST,PUT,DELETE,OPTIONS",
         "Access-Control-Allow-Headers":"Content-Type,Authorization,X-Correlation-Id",
       }});
@@ -104,7 +107,8 @@ export default {
       metrics.increment("http.requests");
       const headersObj = {};
       request.headers.forEach((v,k)=>{ headersObj[k]=v; });
-      const authResult = permissions.enforce(method, pathname, headersObj);
+      if (!routeRequest(pathname,method)) return jsonResponse(404,{ok:false,error:"Route not found"},correlationId,requestId);
+      const authResult = await permissions.enforce(method, pathname, headersObj, { ...workerEnv, NODE_ENV:workerEnv.NODE_ENV || "production" });
       if (!authResult.allowed) return jsonResponse(403, { ok:false, error:authResult.error }, correlationId, requestId);
 
       const queryObj = {};
@@ -131,6 +135,9 @@ export default {
     if (d1Cached.isDirty() && workerEnv.DB) await d1Cached.flush();
     return response;
     });
+    const response=new Response(result.body,result);
+    for(const [key,value] of Object.entries(cors.headers(origin)))response.headers.set(key,value);
+    return response;
   },
 
   async queue(batch, workerEnv, ctx) {

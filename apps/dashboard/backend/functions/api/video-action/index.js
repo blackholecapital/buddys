@@ -2,7 +2,7 @@ const { readDb } = require("../../../layers/core/db");
 const { conciergePost } = require("../../../../shared/services/concierge");
 const rateLimits = require("../../../layers/domain/rateLimits");
 
-const { sign, safeEqual } = require("../../../../shared/services/video-session-auth");
+const { verify } = require("../../../../shared/services/video-session-auth");
 
 module.exports = async function handler({ method, body, env }) {
   if (method !== "POST") return { ok:false, error:"POST only" };
@@ -10,13 +10,10 @@ module.exports = async function handler({ method, body, env }) {
   const contactId = String(body?.contactId || "").trim();
   const sessionId = String(body?.sessionId || "").trim();
   const suppliedToken = String(body?.workflowToken || "").trim();
-  const expectedToken = await sign(env.INTERNAL_CALL_SECRET, contactId, sessionId);
-  if (!expectedToken || !(await safeEqual(suppliedToken, expectedToken))) {
-    return { ok:false, error:"Invalid video workflow session" };
-  }
-
   const contact = readDb().contacts.find((row) => row && row.id === contactId);
-  if (!contact) return { ok:false, error:"Contact not found" };
+  if (!await verify(env?.INTERNAL_CALL_SECRET, suppliedToken, contact, "workflow", sessionId)) {
+    return { ok:false, error:"Invalid or expired video workflow session" };
+  }
 
   const action = String(body?.action || "").trim().toLowerCase();
   if (action !== "contact-status") {

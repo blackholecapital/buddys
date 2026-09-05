@@ -240,6 +240,7 @@
         window.dispatchEvent(new CustomEvent("buddy:video-requested", {
           detail: {
             contactId: result?.contact?.id || "",
+            customerToken: result?.customerToken || "",
             firstName: data.first_name || "",
             lastName: data.last_name || "",
             interest: data.product_interest || "",
