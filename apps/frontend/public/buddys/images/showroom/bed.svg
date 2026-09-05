@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" role="img" aria-label="bed category illustration">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#eaf1fa"/><stop offset="1" stop-color="#f8f5ed"/></linearGradient></defs>
+<rect width="480" height="300" fill="url(#bg)"/><ellipse cx="240" cy="268" rx="180" ry="13" fill="#17345f" opacity=".09"/>
+<g fill="#dbe5f1" stroke="#294b75" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><rect x="82" y="65" width="316" height="164" rx="18"/><rect x="100" y="97" width="125" height="54" rx="10"/><rect x="255" y="97" width="125" height="54" rx="10"/><path d="M82 162h316M97 229v18m286-18v18"/></g></svg>

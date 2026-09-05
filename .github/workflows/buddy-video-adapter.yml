@@ -8,12 +8,17 @@ on:
       - "apps/livekit-avatar-agent/**"
       - "apps/frontend/**"
       - "apps/dashboard/**"
+      - "apps/shared/**"
       - "apps/sms-worker/**"
       - "apps/email-worker/**"
       - "blackhole-runtime/**"
       - "scripts/test-video-commerce.mjs"
       - "scripts/test-buddy-security.mjs"
       - "scripts/test-buddy-messaging-ui.mjs"
+      - "scripts/test-buddy-showroom-browser.mjs"
+      - "scripts/browser/**"
+      - "scripts/cloudflare-buddy-inventory.py"
+      - "scripts/test-cloudflare-buddy-inventory.py"
       - "scripts/test-video-config.mjs"
       - ".github/workflows/buddy-video-adapter.yml"
   push:
@@ -24,12 +29,17 @@ on:
       - "apps/livekit-avatar-agent/**"
       - "apps/frontend/**"
       - "apps/dashboard/**"
+      - "apps/shared/**"
       - "apps/sms-worker/**"
       - "apps/email-worker/**"
       - "blackhole-runtime/**"
       - "scripts/test-video-commerce.mjs"
       - "scripts/test-buddy-security.mjs"
       - "scripts/test-buddy-messaging-ui.mjs"
+      - "scripts/test-buddy-showroom-browser.mjs"
+      - "scripts/browser/**"
+      - "scripts/cloudflare-buddy-inventory.py"
+      - "scripts/test-cloudflare-buddy-inventory.py"
       - "scripts/test-video-config.mjs"
       - ".github/workflows/buddy-video-adapter.yml"
 
@@ -39,7 +49,7 @@ permissions:
 jobs:
   contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -51,6 +61,12 @@ jobs:
         run: node --experimental-strip-types scripts/test-video-commerce.mjs
       - name: Verify messaging UI lifecycle
         run: node scripts/test-buddy-messaging-ui.mjs
+      - name: Verify Cloudflare inventory redaction
+        run: python3 scripts/test-cloudflare-buddy-inventory.py
+      - name: Install showroom browser checks
+        run: npm ci --prefix scripts/browser && scripts/browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify showroom in Chromium
+        run: node scripts/test-buddy-showroom-browser.mjs
       - name: Verify production security boundaries
         run: node scripts/test-buddy-security.mjs
       - name: Verify dashboard contracts and bundle boundary

@@ -135,6 +135,15 @@
     </div>
 
     <div class="buddy-live-workspace">
+      <section id="buddyShowroom" class="buddy-showroom" aria-labelledby="buddyShowroomTitle">
+        <div class="showroom-heading"><span>YOUR PERSONAL SHOWROOM</span><h2 id="buddyShowroomTitle">Find your next favorite.</h2>
+          <label for="buddyCategory">Explore a category</label><select id="buddyCategory"><option value="">Choose a category</option></select>
+          <p id="buddyShowroomNotice">Compare two options with Buddy.</p>
+        </div>
+        <div id="buddyProductCards" class="showroom-products"></div>
+        <section id="buddyProductDetail" class="showroom-detail" aria-label="Product details" hidden></section>
+      </section>
+      <div class="buddy-side-panel">
       <section class="video-stage" aria-label="Buddy live video">
         <div id="buddyVideoMount" class="video-mount">
           <div class="video-placeholder">
@@ -172,6 +181,7 @@
           <button type="submit">Send</button>
         </form>
       </aside>
+      </div>
     </div>
   </div>
 </div>
@@ -276,6 +286,7 @@
   });
 })();
 </script>
+<script src="./showroom.js"></script>
 <script src="./video.js"></script>
 </body>
 </html>

@@ -14,6 +14,7 @@ const contacts = require("./functions/api/contacts");
 const leads = require("./functions/api/leads");
 const calls = require("./functions/api/calls");
 const callNow = require("./functions/api/call-now");
+const showroom = require("./functions/api/showroom");
 const chatSession = require("./functions/api/chat-session");
 const chatMessage = require("./functions/api/chat-message");
 const videoSession = require("./functions/api/video-session");
@@ -51,6 +52,7 @@ function routeRequest(pathname, method, query = {}, headers = {}) {
   if (pathname === "/api/leads") return { fn: leads, params:{} };
   if (pathname === "/api/calls") return { fn: calls, params:{} };
   if (pathname === "/api/call-now") return { fn: callNow, params:{ id:query.id || "", sig:query.sig || "" } };
+  if (pathname === "/api/showroom") return { fn: showroom, params:{category:query.category || ""} };
   if (pathname === "/api/chat/session") return { fn: chatSession, params:{} };
   if (pathname === "/api/chat/message") return { fn: chatMessage, params:{} };
   if (pathname === "/api/video/session") return { fn: videoSession, params:{} };

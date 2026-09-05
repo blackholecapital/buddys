@@ -16,8 +16,9 @@ process.env.LOG_LEVEL = 'error';
 const db = require('../apps/dashboard/backend/layers/core/db');
 const store = require('../apps/dashboard/backend/layers/core/memory-store');
 db.setBackend(store); store.reset();
+const catalog = require("../apps/shared/buddy-catalog.cjs");
 const contacts = require('../apps/dashboard/backend/layers/domain/contacts');
-const handlers = Object.fromEntries(['leads','video-session','video-action','video-transcript','chat-session','chat-message'].map(name => [name,require(`../apps/dashboard/backend/functions/api/${name}/index.js`)]));
+const handlers = Object.fromEntries(['leads','video-session','video-action','video-transcript','chat-session','chat-message','showroom'].map(name => [name,require(`../apps/dashboard/backend/functions/api/${name}/index.js`)]));
 const sqlite = new DatabaseSync(':memory:');
 const d1 = { prepare(sql) {
   const statement = sqlite.prepare(sql); let args = [];
@@ -85,6 +86,16 @@ const pagesEnv = { DASHBOARD:{ async fetch(req) {
 async function post(path,body) { return (await onRequest({request:new Request(`https://pages.test/api/${path}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),env:pagesEnv})).json(); }
 let contactId; let customerToken;
 try {
+  const productIds = new Set();
+  for (const category of catalog.categories) {
+    const products = catalog.products(category);assert.equal(products.length,2);
+    for (const product of products) {
+      assert.ok(!productIds.has(product.id));productIds.add(product.id);
+      assert.equal(product.price,null);assert.equal(product.productUrl,null);
+      assert.match(readFileSync(new URL('../apps/frontend/public'+product.image.src,import.meta.url),'utf8'),/<svg/);
+    }
+  }
+  assert.equal(catalog.products('Financing Questions').length,0,'Support interests must not invent sellable products');
   db.mutate(next => {next.settings.rateLimits={perMinute:1000,perHour:10000};return next;});
   const guest = await post('chat/session',{});
   assert.equal(guest.ok,true,guest.error); assert.equal(guest.workflowToken,'');
@@ -102,6 +113,23 @@ try {
   assert.equal(textSession.chatSessionId,guest.chatSessionId,'Linking preserves guest conversation identity');
   assert.equal(textSession.history.messages[0].text,'I care about camera quality');
   const textAuth={contactId,chatSessionId:textSession.chatSessionId,chatToken:textSession.chatToken};
+  const shoppingAuth={contactId,sessionId:textSession.sessionId,workflowToken:textSession.workflowToken};
+  const event={...textAuth,event:'product.shown',productId:textSession.workflow.productOptions[0].id,catalogVersion:textSession.workflow.catalogVersion};
+  assert.equal((await post('showroom',event)).ok,true);
+  assert.equal((await post('showroom',event)).duplicate,true);
+  assert.equal((await post('showroom',{...event,event:'product.opened'})).ok,true);
+  assert.equal((await post('showroom',{...event,event:'product.selected'})).ok,false,'Only the server may record confirmed selection');
+  assert.equal((await post('showroom',{...event,productId:'forged'})).ok,false);
+  assert.equal((await post('showroom',{...event,chatToken:'forged'})).ok,false);
+  const changedCategory=await post('video/action',{...shoppingAuth,action:'category-selected',category:'Bedroom Furniture'});
+  assert.equal(changedCategory.ok,true,changedCategory.error);assert.equal(changedCategory.workflow.productOptions.length,2);
+  assert.match(changedCategory.workflow.productOptions[0].name,/Bedroom/);
+  assert.equal((await post('chat/session',{...textAuth})).workflow.category,'Bedroom Furniture');
+  assert.equal((await post('video/action',{...shoppingAuth,action:'product-selected',optionIndex:0,productId:event.productId,catalogVersion:event.catalogVersion})).ok,false,'Stale category choice must not create an envelope');
+  assert.equal(envelopeCalls,0);
+  assert.equal((await post('video/action',{...shoppingAuth,action:'category-selected',category:'forged'})).ok,false);
+  assert.equal((await post('video/action',{...shoppingAuth,action:'category-selected',category:'Smartphones'})).ok,true);
+
   const chatMessage={...textAuth,text:'Show me the choices',requestId:'linked-message-1'};
   assert.equal((await post('chat/message',chatMessage)).ok,true);
   const counted=chatCalls;
@@ -127,12 +155,17 @@ try {
   failAgreementEmail=false;
   const selected=await post('video/action',{...auth,action:'product-selected',optionIndex:0});
   assert.equal(selected.ok,true,selected.error); assert.equal(envelopeCalls,1);
+  assert.equal((await post('video/action',{...auth,action:'product-selected',optionIndex:1})).ok,false,'A stale second tab must not switch an existing agreement');
+  assert.equal((await post('video/action',{...shoppingAuth,action:'category-selected',category:'Gaming'})).ok,false,'Agreement locks category');
+  assert.equal(db.readDb().activities.filter(a=>a.type==='product.selected').length,1);
+
   assert.equal(sent.filter(m=>m.messageType==='buddy-docusign'&&m.message).length,1);
   assert.equal(dashboardCallbacks,0,'Dashboard BFF must not recursively call its locked API');
   assert.ok(sent.some(message=>message.messageType==='buddy-docusign'));
   assert.equal((await post('video/session',{customerToken,contactId})).workflow.phase,'awaiting-signature');
   assert.equal((await post('video/action',{...auth,action:'product-selected',optionIndex:0})).alreadyCreated,true);
   assert.equal(envelopeCalls,1);
+  assert.equal(db.readDb().activities.filter(a=>a.type==='product.selected').length,1);
   // Tampering and mismatched envelopes must not change document state.
   const callbackBody=JSON.stringify({envelopeId:'envelope-test',status:'completed'});
   const callbackSignature=createHmac('sha256',env.DOCUSIGN_CONNECT_HMAC_SECRET).update(callbackBody).digest('base64');

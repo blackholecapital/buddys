@@ -1,3 +1,4 @@
+const activity = require("../../../layers/domain/activity");
 const { readDb } = require("../../../layers/core/db");
 const { conciergePost } = require("../../../../shared/services/concierge");
 const rateLimits = require("../../../layers/domain/rateLimits");
@@ -25,12 +26,24 @@ module.exports = async function handler({ method, body, env }) {
     return conciergePost(env, "/internal/contact-status", { contactId });
   }
 
+  if (action === "category-selected") {
+    return conciergePost(env,"/internal/showroom/category",{contactId,category:body?.category});
+  }
+
   if (action === "product-selected") {
     const optionIndex = Number(body?.optionIndex);
     if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex > 1) {
       return { ok:false, error:"Choose product option 1 or 2" };
     }
-    return conciergePost(env, "/internal/product-selected", { contactId, optionIndex });
+    const result = await conciergePost(env, "/internal/product-selected", { contactId, optionIndex, productId:body?.productId, catalogVersion:body?.catalogVersion });
+    if (result.ok && result.product?.id) {
+      const eventKey=`product.selected:${result.docusign?.envelopeId || result.product.id}`;
+      if (!(readDb().activities||[]).some(a=>a.entityId===contactId && a.metadata?.eventKey===eventKey)) activity.record({
+        type:"product.selected",entityType:"contact",entityId:contactId,message:`${result.product.name} selected`,
+        metadata:{eventKey,productId:result.product.id,sessionId,source:"commerce-server",envelopeId:result.docusign?.envelopeId || ""},
+      });
+    }
+    return result;
   }
 
   if (action === "delivery-options") {

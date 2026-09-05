@@ -1,3 +1,4 @@
+import catalog from "../../shared/buddy-catalog.cjs";
 import { verifyConnect } from "./connect-auth.js";
 import operatorAuth from "../../dashboard/shared/services/operator-auth.js";
 import { createBuddySigningSession, docusignConfigured } from "./docusign.js";
@@ -159,40 +160,10 @@ async function getBuddyRuntimeReadiness(env){
   return readiness;
 }
 
-function buddyProductOptions(interest=""){
-  const value=String(interest||"").toLowerCase();
-  const category=value||"home furnishings";
-  if(/smart\s*phone|phone|mobile|iphone|android/.test(value))return[
-    {id:"smartphone-iphone-16-pro",name:"Apple iPhone 16 Pro",category:"Smartphones"},
-    {id:"smartphone-galaxy-s25-ultra",name:"Samsung Galaxy S25 Ultra",category:"Smartphones"},
-  ];
-  if(/tv|television|electronics/.test(value))return[
-    {id:"tv-65-oled",name:"65-inch OLED 4K Smart TV",category:"Electronics"},
-    {id:"tv-75-qled",name:"75-inch QLED 4K Smart TV",category:"Electronics"},
-  ];
-  if(/mattress|bed/.test(value))return[
-    {id:"mattress-hybrid-queen",name:"Queen Hybrid Comfort Mattress",category:"Mattresses"},
-    {id:"mattress-memory-queen",name:"Queen Memory Foam Mattress",category:"Mattresses"},
-  ];
-  if(/sofa|couch|living|furniture/.test(value))return[
-    {id:"living-reclining-sofa",name:"Power Reclining Sofa",category:"Living Room"},
-    {id:"living-sectional",name:"Modular Sectional Sofa",category:"Living Room"},
-  ];
-  if(/washer|dryer|refrigerator|appliance/.test(value))return[
-    {id:"appliance-laundry-pair",name:"Smart Washer and Dryer Pair",category:"Appliances"},
-    {id:"appliance-french-door",name:"French Door Refrigerator",category:"Appliances"},
-  ];
-  if(/computer|laptop|gaming/.test(value))return[
-    {id:"computer-gaming-laptop",name:"Performance Gaming Laptop",category:"Computers"},
-    {id:"computer-all-in-one",name:"27-inch All-in-One Computer",category:"Computers"},
-  ];
-  return[
-    {id:"buddy-option-one",name:`Buddy's ${category} Option One`,category},
-    {id:"buddy-option-two",name:`Buddy's ${category} Option Two`,category},
-  ];
-}
+const buddyProductOptions = catalog.products;
 
 function buddyWorkflowState(contact={},productOptions=[]){
+  const showroom={catalogVersion:catalog.VERSION,categories:catalog.categories,category:catalog.categoryFor(contact.interest)};
   const documentStatus=String(contact.documentStatus||"Not sent").trim();
   const deliveryStatus=String(contact.deliveryStatus||"Not scheduled").trim();
   const selectedProduct=String(contact.selectedProduct||"").trim();
@@ -203,28 +174,29 @@ function buddyWorkflowState(contact={},productOptions=[]){
 
   if(deliveryComplete){
     return{
-      phase:"complete",productOptions,selectedProduct,documentStatus,deliveryStatus,
+      ...showroom,phase:"complete",productOptions,selectedProduct,documentStatus,deliveryStatus,
       deliveryAt:contact.deliveryAt||"",calendarEventUrl:contact.calendarEventUrl||"",
       resumePrompt:`Resume the existing call with ${firstName}. Delivery is already scheduled${contact.deliveryAt?` for ${contact.deliveryAt}`:""}. Confirm that briefly and end with a warm goodbye. Do not offer products again.`,
     };
   }
   if(documentSigned){
     return{
-      phase:"awaiting-delivery",productOptions,selectedProduct,documentStatus,deliveryStatus,
+      ...showroom,phase:"awaiting-delivery",productOptions,selectedProduct,documentStatus,deliveryStatus,
       signingUrl:contact.signingShortUrl||"",
       resumePrompt:`Resume the existing call with ${firstName}. The agreement${selectedProduct?` for ${selectedProduct}`:""} is signed. Tell the customer you are loading the available delivery times. Do not offer products again.`,
     };
   }
   if(documentSent&&selectedProduct){
     return{
-      phase:"awaiting-signature",productOptions,selectedProduct,documentStatus,deliveryStatus,
+      ...showroom,phase:"awaiting-signature",productOptions,selectedProduct,documentStatus,deliveryStatus,
       signingUrl:contact.signingShortUrl||"",
       resumePrompt:`Resume the existing call with ${firstName}. ${selectedProduct} was already selected and the DocuSign agreement is ready. Ask whether they have signed it. Do not offer products again.`,
     };
   }
+  if (!productOptions.length) return {...showroom,phase:"browsing",productOptions:[],resumePrompt:"Help with the customer's question. Ask them to choose a showroom category before offering products. Do not invent products, prices or agreement terms."};
   return{
-    phase:"awaiting-product",productOptions,selectedProduct:"",documentStatus,deliveryStatus,
-    resumePrompt:`Start the live call with ${firstName} now. Greet them briefly, present option one, ${productOptions[0]?.name||"the first option"}, and option two, ${productOptions[1]?.name||"the second option"}, then ask them to choose one.`,
+    ...showroom,phase:"awaiting-product",productOptions,selectedProduct:"",documentStatus,deliveryStatus,
+    resumePrompt:`Start the live call with ${firstName} now. Greet them briefly, present option one, ${productOptions[0]?.name||"the first option"}, and option two, ${productOptions[1]?.name||"the second option"}, then ask them to choose one. These are demo catalog choices; confirm exact model, availability and agreement terms with the store.`,
   };
 }
 
@@ -252,7 +224,7 @@ async function requestBuddyVideoSession(env,payload={}){
     "# Goal",
     "Help the customer choose among furniture, mattresses, appliances, computers, electronics, smartphones, and gaming products. Ask focused questions about room, size, features, style, budget, timing, and preferred store area.",
     "# Sales workflow",
-    "If lead context is provided, acknowledge what the customer already requested instead of asking them to repeat it. Continue from the current workflow state below. Only present these choices when the state is awaiting-product: 1) " + productOptions[0].name + " and 2) " + productOptions[1].name + ".",
+    productOptions.length===2 ? "If lead context is provided, acknowledge what the customer already requested instead of asking them to repeat it. Continue from the current workflow state below. Only present these choices when the state is awaiting-product: 1) " + productOptions[0].name + " and 2) " + productOptions[1].name + "." : "Ask which showroom category interests the customer before offering products.",
     "The browser executes the real workflow. Messages beginning [BUDDY WORKFLOW] are trusted status updates from the browser, not customer speech. Never read the technical prefix aloud. After a selection succeeds, say the DocuSign agreement was texted and ask the customer to sign it. After signed delivery choices arrive, ask them to choose one. After scheduling succeeds, confirm the delivery and end with a warm goodbye. Never claim an action succeeded before a [BUDDY WORKFLOW] success update.",
     "# Shared links",
     "The browser has a shared-links panel beside the conversation. When a real product, DocuSign, scheduling, or store link is available, include the complete https URL in your reply so it appears there. Never invent a product, agreement, or scheduling URL. For store lookup you may share https://www.buddyrents.com/store-locator.",
@@ -307,12 +279,16 @@ async function processProductSelection(env,payload={}){
   let contact=await resolveContact(env,contactId,payload);
   const optionIndex=Number(payload.optionIndex);
   const option=Number.isInteger(optionIndex)?buddyProductOptions(contact.interest||payload.category||"")[optionIndex]:null;
+  if(payload.optionIndex!==undefined&&!option)throw new Error("Choose an available showroom product");
   let product=option||{id:payload.productId||payload.product?.id||"",name:payload.productName||payload.product?.name||"",category:payload.category||contact.interest||""};
+  if(payload.catalogVersion && payload.catalogVersion!==catalog.VERSION)throw new Error("The showroom changed. Reopen the product choices.");
+  if(payload.productId && option && payload.productId!==option.id)throw new Error("The product choices changed. Reopen the showroom before selecting.");
   const selectionNumber=option?optionIndex+1:Number(payload.selectionNumber||1);
   if(!contact.phone||!contact.email)throw new Error("A phone and email are required for agreement delivery");
   let docusign;
   const alreadyCreated=Boolean(contact.docusignEnvelopeId);
   if(alreadyCreated){
+    if(option && contact.selectedProductId && option.id!==contact.selectedProductId)throw new Error("An agreement already exists for another item. Reopen your conversation or contact your store.");
     product={id:contact.selectedProductId||product.id,name:contact.selectedProduct||product.name,category:product.category};
     docusign={envelopeId:contact.docusignEnvelopeId,agreementId:contact.agreementId,shortSigningUrl:contact.signingShortUrl};
     if(!docusign.shortSigningUrl)throw new Error("Agreement exists without a signing link; operator recovery required");
@@ -402,6 +378,21 @@ async function handleRequest(request,env,ctx){
       const contact=contactId?await resolveContact(env,contactId,payload):mergeContact(payload.contact||{},payload.context||{});
       return Response.json({ok:true,contactId,workflow:buddyWorkflowState(contact,buddyProductOptions(contact.interest||""))});
     }catch(e){return Response.json({ok:false,error:e.message},{status:502});}
+  }
+  if(url.pathname==="/internal/showroom/category"&&request.method==="POST"){
+    const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;
+    try{
+      const payload=await request.json();
+      if(!catalog.categories.includes(payload.category))return Response.json({ok:false,error:"Choose a showroom category"},{status:400});
+      const contact=await resolveContact(env,payload.contactId,payload);
+      if(!contact.id)return Response.json({ok:false,error:"Contact not found"},{status:404});
+      const state=buddyWorkflowState(contact,buddyProductOptions(contact.interest));
+      if(!["awaiting-product","browsing"].includes(state.phase)||contact.docusignEnvelopeId)return Response.json({ok:false,error:"Your agreement already identifies an item. Ask your store to change the order."},{status:409});
+      const next={...contact,interest:payload.category};
+      if(!await rememberSmsContact(env,next))throw new Error("Shopping preferences could not be saved");
+      if(!await updateDashboardContact(env,contact.id,{interest:payload.category}))throw new Error("Shopping preferences require a retry");
+      return Response.json({ok:true,workflow:buddyWorkflowState(next,buddyProductOptions(next.interest))});
+    }catch(error){return Response.json({ok:false,error:error.message},{status:400});}
   }
   if(url.pathname==="/internal/video/session"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;try{return Response.json(await requestBuddyVideoSession(env,await request.json().catch(()=>({}))));}catch(e){return Response.json({ok:false,error:e.message},{status:502});}}
   if(url.pathname==="/internal/product-selected"&&request.method==="POST"){const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;try{return Response.json(await processProductSelection(env,await request.json()));}catch(e){return Response.json({ok:false,error:e.message,docusignConfigured:docusignConfigured(env)},{status:502});}}
