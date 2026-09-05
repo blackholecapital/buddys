@@ -15,12 +15,24 @@
   const resourceList = document.getElementById("buddyResourceList");
 
   let room = null;
+  let chatMeta = null;
+  let chatPromise = null;
+  let pendingMessage = null;
+  let workspaceEpoch = 0;
   let sessionPromise = null;
+  let livekitPromise = null;
   let micEnabled = false;
   let videoEnabled = false;
   let agentReady = false;
   let closing = false;
   let pendingContext = { source:"direct" };
+  try {
+    const saved = JSON.parse(sessionStorage.getItem("buddy-customer-session") || "null");
+    if (saved && typeof saved === "object") pendingContext = saved;
+  } catch {}
+  function saveContext() {
+    try { sessionStorage.setItem("buddy-customer-session", JSON.stringify(pendingContext)); } catch {}
+  }
   let remoteVideoElement = null;
   const remoteAudioElements = new Set();
   const renderedTranscriptions = new Set();
@@ -122,13 +134,14 @@
   }
 
   async function postWorkflowAction(action, payload = {}) {
-    if (!sessionMeta.contactId || !sessionMeta.sessionId || !sessionMeta.workflowToken) {
-      throw new Error("This video room is not linked to a lead");
+    const auth = room && agentReady ? sessionMeta : chatMeta;
+    if (!auth?.contactId || !auth?.sessionId || !auth?.workflowToken) {
+      throw new Error("Complete your shopping preferences to link this conversation to a lead");
     }
     const response = await fetch("/api/video/action", {
       method:"POST",
       headers:{ "content-type":"application/json", "accept":"application/json" },
-      body:JSON.stringify({ ...sessionMeta, action, ...payload }),
+      body:JSON.stringify({ ...auth, action, ...payload }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data?.ok === false) throw new Error(data?.error || "Buddy workflow action failed");
@@ -261,7 +274,9 @@
     workflow.productOptions = Array.isArray(nextWorkflow?.productOptions) ? nextWorkflow.productOptions.slice(0, 2) : [];
     workflow.resumePrompt = String(nextWorkflow?.resumePrompt || "").trim();
     workflow.announced = false;
-    if (!sessionMeta.workflowToken) return;
+    stopWorkflowPolling();
+    clearWorkflowCards();
+    if (!(room && agentReady ? sessionMeta : chatMeta)?.workflowToken) { workflow.phase = "guest"; return; }
 
     const phase = String(nextWorkflow?.phase || "awaiting-product");
     if (phase === "complete") {
@@ -299,13 +314,13 @@
     }
   }
 
-  function handleCustomerWorkflowMessage(text) {
+  async function handleCustomerWorkflowMessage(text) {
     if (workflow.phase === "awaiting-product") {
       const choice = productChoiceFromText(text);
-      if (choice >= 0) void chooseProduct(choice);
+      if (choice >= 0) await chooseProduct(choice);
     } else if (workflow.phase === "awaiting-delivery") {
       const choice = deliveryChoiceFromText(text);
-      if (choice >= 0) void chooseDelivery(choice);
+      if (choice >= 0) await chooseDelivery(choice);
     }
   }
 
@@ -340,14 +355,14 @@
     chatStream.replaceChildren();
     sessionTranscript = [];
     for (const entry of messages) {
-      rememberTranscript(entry.role, entry.text, entry.segmentId, false);
+      // Restored history is already saved; only new media segments are persisted.
       addBubble(entry.text, entry.role === "customer" ? "user" : "buddy");
     }
     addBubble("Previous conversation restored. Buddy will continue where you left off.", "system");
   }
 
   async function persistVideoSession(ended = false) {
-    if (!sessionMeta.contactId || !sessionMeta.sessionId) return;
+    if (!sessionMeta.contactId || !sessionMeta.sessionId || !sessionMeta.room) return;
     const payload = {
       ...sessionMeta,
       ended,
@@ -369,7 +384,7 @@
   }
 
   function scheduleTranscriptPersistence() {
-    if (!sessionMeta.contactId || !sessionMeta.sessionId) return;
+    if (!sessionMeta.contactId || !sessionMeta.sessionId || !sessionMeta.room) return;
     if (transcriptTimer) clearTimeout(transcriptTimer);
     transcriptTimer = setTimeout(() => {
       transcriptTimer = null;
@@ -377,23 +392,62 @@
     }, 600);
   }
 
-  function showWorkspace(context = {}, startVideo = false) {
+  async function ensureChatSession() {
+    if (chatMeta) return chatMeta;
+    if (chatPromise) return chatPromise;
+    const epoch = workspaceEpoch;
+    chatPromise = (async () => {
+      const response = await fetch("/api/chat/session", {
+        method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(pendingContext),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok !== true) {
+        if (data.code === "chat_session_expired") {
+          delete pendingContext.chatSessionId; delete pendingContext.chatToken; saveContext();
+        }
+        throw new Error(data.error || "Buddy messaging is unavailable");
+      }
+      if (epoch !== workspaceEpoch) throw new Error("Conversation closed");
+      chatMeta = data;
+      pendingContext.chatSessionId = data.chatSessionId;
+      pendingContext.chatToken = data.chatToken;
+      saveContext();
+      renderTranscriptHistory(data.history?.messages || []);
+      if (!room) {
+        prepareWorkflow(data.workflow);
+        if (workflow.phase === "resuming-delivery") { workflow.phase = "idle"; await loadDeliveryChoices(); }
+      }
+      setChatState("Ready to message");
+      setStatus("Message Buddy, or connect on video when ready.");
+      return data;
+    })();
+    try { return await chatPromise; }
+    finally { if (epoch === workspaceEpoch) chatPromise = null; }
+  }
+
+  async function showWorkspace(context = {}, startVideo = false) {
+    if (context.contactId && context.contactId !== pendingContext.contactId) {
+      await closeWorkspace();
+      pendingContext = pendingContext.contactId ? {source:"lead-form"} : {
+        source:"lead-form",chatSessionId:pendingContext.chatSessionId,chatToken:pendingContext.chatToken,
+      };
+      chatStream.replaceChildren();
+      resourceList.replaceChildren();
+      sharedUrls.clear();
+    }
     pendingContext = { ...pendingContext, ...context };
+    saveContext();
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
-    if (!room) {
-      setStatus(context.contactId ? "Your shopping preferences are ready." : "Opening private message room…");
-      setChatState("Connecting…");
-    }
     if (startVideo) {
       void enableVideo();
     } else {
-      void ensureSession().catch((error) => {
-        setChatState("Offline");
-        setStatus("Buddy could not join");
+      try { await ensureChatSession(); }
+      catch (error) {
+        setChatState("Messaging unavailable");
         addBubble(error instanceof Error ? error.message : "Buddy chat is unavailable.", "system");
-      });
+      }
       requestAnimationFrame(() => chatInput?.focus({ preventScroll:true }));
     }
   }
@@ -454,7 +508,22 @@
     }
   }
 
-  async function connectLiveKit(livekitUrl, token) {
+  async function loadLiveKit() {
+    if (window.LivekitClient) return;
+    if (!livekitPromise) livekitPromise = new Promise((resolve,reject) => {
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/livekit-client@2.22.1/dist/livekit-client.umd.js";
+      const timer = setTimeout(() => { script.remove(); livekitPromise = null; reject(new Error("Live video client timed out")); }, 15000);
+      script.onload = () => { clearTimeout(timer); resolve(); };
+      script.onerror = () => { clearTimeout(timer); script.remove(); livekitPromise = null; reject(new Error("Live video client did not load")); };
+      document.head.appendChild(script);
+    });
+    await livekitPromise;
+  }
+
+  async function connectLiveKit(livekitUrl, token, epoch) {
+    await loadLiveKit();
+    if (epoch !== workspaceEpoch) throw new Error("Conversation closed");
     if (!window.LivekitClient) throw new Error("Live video client did not load");
     const { Room, RoomEvent, Track } = window.LivekitClient;
     const nextRoom = new Room({ adaptiveStream:true, dynacast:true });
@@ -500,17 +569,26 @@
         node.remove();
       });
     });
-    nextRoom.on(RoomEvent.Disconnected, () => {
+    nextRoom.on(RoomEvent.Disconnected, async () => {
+      if (epoch !== workspaceEpoch || room !== nextRoom) return;
       if (room === nextRoom) room = null;
       sessionPromise = null;
       agentReady = false;
       if (closing) return;
-      setChatState("Disconnected");
-      renderPlaceholder("Disconnected", "Reconnect to continue messaging or video chat");
+      videoEnabled = false;
+      micEnabled = false;
+      micButton.disabled = true;
+      setChatState("Ready to message");
+      renderPlaceholder("Video disconnected", "You can keep messaging or reconnect on video");
+      await persistVideoSession(true);
+      // Refresh commerce phase after any actions completed in video.
+      chatMeta = null;
+      void ensureChatSession().catch(error => addBubble(error.message, "system"));
       setConnect("Reconnect on Video", false);
     });
 
     await nextRoom.connect(livekitUrl, token);
+    if (epoch !== workspaceEpoch) { await nextRoom.disconnect(); throw new Error("Conversation closed"); }
     console.info("Buddy: JOINED ROOM", nextRoom.name);
 
     for (const participant of nextRoom.remoteParticipants.values()) {
@@ -524,6 +602,9 @@
   }
 
   async function ensureSession() {
+    const epoch = workspaceEpoch;
+    await ensureChatSession();
+    if (epoch !== workspaceEpoch) throw new Error("Conversation closed");
     if (room) return room;
     if (sessionPromise) return sessionPromise;
 
@@ -537,6 +618,7 @@
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data?.ok === false) throw new Error(data?.error || "Buddy session failed");
+      if (epoch !== workspaceEpoch) throw new Error("Conversation closed");
       const livekitUrl = data.livekitUrl || data.url || data.livekit_url;
       const token = data.token || data.accessToken || data.access_token;
       if (!livekitUrl || !token) throw new Error("Video broker returned no LiveKit URL or token");
@@ -550,11 +632,13 @@
       };
       renderTranscriptHistory(data?.history?.messages || []);
 
-      await connectLiveKit(livekitUrl, token);
+      await connectLiveKit(livekitUrl, token, epoch);
+      if (epoch !== workspaceEpoch) { await room?.disconnect(); throw new Error("Conversation closed"); }
       setChatState("Waiting for Buddy…");
       setStatus("Room connected — waiting for Buddy to join…");
 
       const ready = await waitForAgent();
+      if (epoch !== workspaceEpoch) throw new Error("Conversation closed");
       if (!ready) {
         throw new Error("The room opened, but Buddy's avatar worker did not join. Please try again.");
       }
@@ -565,6 +649,7 @@
     try {
       return await sessionPromise;
     } catch (error) {
+      if (epoch !== workspaceEpoch) throw error;
       try { if (room) await room.disconnect(); } catch {}
       room = null;
       sessionPromise = null;
@@ -574,10 +659,16 @@
   }
 
   async function enableVideo() {
+    const epoch = workspaceEpoch;
+    if (chatInput.disabled || workflow.busy) {
+      addBubble("Please wait for the current message or shopping action, then connect on video.", "system");
+      return;
+    }
     try {
       setConnect("Connecting Video…", true);
       setStatus("Connecting Buddy's live avatar…");
       await ensureSession();
+      if (epoch !== workspaceEpoch) return;
       videoEnabled = true;
       micEnabled = true;
       await room.localParticipant.setMicrophoneEnabled(true);
@@ -592,9 +683,14 @@
       setStatus(remoteVideoElement ? "Live with Buddy" : "Buddy joined — waiting for video…");
       setChatState("Live video connected");
     } catch (error) {
+      if (epoch !== workspaceEpoch) return;
       const message = error instanceof Error ? error.message : "Video connection failed";
-      renderPlaceholder("Buddy did not join", message);
-      setChatState("Connection failed");
+      try { if (room) await room.disconnect(); } catch {}
+      videoEnabled = false;
+      micEnabled = false;
+      micButton.disabled = true;
+      renderPlaceholder("Video is unavailable", "You can keep messaging while video is unavailable.");
+      setChatState(chatMeta ? "Ready to message" : "Messaging unavailable");
       setConnect("Try Video Again", false);
       addBubble(message, "system");
     }
@@ -602,6 +698,9 @@
 
   async function closeWorkspace() {
     closing = true;
+    workspaceEpoch++;
+    chatMeta = null;
+    chatPromise = null;
     if (transcriptTimer) clearTimeout(transcriptTimer);
     transcriptTimer = null;
     await persistVideoSession(true);
@@ -624,7 +723,7 @@
     modal.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
     renderPlaceholder("Ready to message Buddy");
-    setChatState("Start a new conversation");
+    setChatState("Conversation saved — reopen to continue");
     setConnect("Connect on Video", false);
     micButton.disabled = true;
   }
@@ -633,16 +732,36 @@
     event.preventDefault();
     const text = String(chatInput.value || "").trim();
     if (!text) return;
-    addBubble(text, "user");
-    chatInput.value = "";
     chatInput.disabled = true;
+    const epoch = workspaceEpoch;
     try {
-      await ensureSession();
-      await room.localParticipant.sendText(text, { topic:"lk.chat" });
-      rememberTranscript("customer", text);
-      handleCustomerWorkflowMessage(text);
+      await ensureChatSession();
+      if (epoch !== workspaceEpoch) return;
+      addBubble(text, "user");
+      chatInput.value = "";
+      if (room && agentReady && videoEnabled) {
+        await room.localParticipant.sendText(text, { topic:"lk.chat" });
+        rememberTranscript("customer", text);
+        await handleCustomerWorkflowMessage(text);
+      } else {
+        await handleCustomerWorkflowMessage(text);
+        if (!pendingMessage || pendingMessage.text !== text || pendingMessage.chatSessionId !== chatMeta.chatSessionId) {
+          pendingMessage = {text,chatSessionId:chatMeta.chatSessionId,requestId:crypto.randomUUID()};
+        }
+        const response = await fetch("/api/chat/message", {
+          method:"POST",headers:{"content-type":"application/json"},
+          body:JSON.stringify({contactId:chatMeta.contactId,chatSessionId:chatMeta.chatSessionId,
+            chatToken:chatMeta.chatToken,...pendingMessage}),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok !== true) throw new Error(data.error || "Buddy messaging is unavailable");
+        if (epoch !== workspaceEpoch) return;
+        pendingMessage = null;
+        addBubble(data.response, "buddy");
+        setChatState("Ready to message");
+      }
     } catch (error) {
-      addBubble(error instanceof Error ? error.message : "Buddy messaging is unavailable.", "system");
+      if (epoch === workspaceEpoch) { chatInput.value = text; addBubble(error instanceof Error ? error.message : "Buddy messaging is unavailable.", "system"); }
     } finally {
       chatInput.disabled = false;
       chatInput.focus();
@@ -652,6 +771,7 @@
   messageButton.addEventListener("click", () => showWorkspace({ source:"direct-message" }, false));
   videoButton.addEventListener("click", () => showWorkspace({ source:"direct-video" }, true));
   connectButton.addEventListener("click", enableVideo);
+  window.addEventListener("buddy:conversation-requested", (event) => showWorkspace(event.detail || {}, event.detail?.startVideo === true));
   window.addEventListener("buddy:video-requested", (event) => showWorkspace(event.detail || {}, true));
 
   micButton.addEventListener("click", async () => {

@@ -43,7 +43,9 @@ Scope covered by this pass:
 
 Exit: unauthorized role/settings/contact/transcript/callback/document access rejected; provider failure visible; authorized sales path passes.
 
-## Pass 3 — Independent messaging and video handoff
+## Pass 3 — Independent messaging and video handoff (implemented, pending deployment)
+
+Implementation, validation and deployment requirements: [PASS-3-MESSAGING.md](PASS-3-MESSAGING.md).
 
 - Expose lightweight chat through the sealed adapter `/api/chat`; Message Buddy must not start LiveKit or allocate avatar resources.
 - Persist text conversation identity/history and share the same commerce actions.

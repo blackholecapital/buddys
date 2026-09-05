@@ -13,6 +13,7 @@ on:
       - "blackhole-runtime/**"
       - "scripts/test-video-commerce.mjs"
       - "scripts/test-buddy-security.mjs"
+      - "scripts/test-buddy-messaging-ui.mjs"
       - "scripts/test-video-config.mjs"
       - ".github/workflows/buddy-video-adapter.yml"
   push:
@@ -28,6 +29,7 @@ on:
       - "blackhole-runtime/**"
       - "scripts/test-video-commerce.mjs"
       - "scripts/test-buddy-security.mjs"
+      - "scripts/test-buddy-messaging-ui.mjs"
       - "scripts/test-video-config.mjs"
       - ".github/workflows/buddy-video-adapter.yml"
 
@@ -47,6 +49,8 @@ jobs:
         run: node scripts/test-video-config.mjs
       - name: Verify video commerce through Pages and the sealed adapter
         run: node --experimental-strip-types scripts/test-video-commerce.mjs
+      - name: Verify messaging UI lifecycle
+        run: node scripts/test-buddy-messaging-ui.mjs
       - name: Verify production security boundaries
         run: node scripts/test-buddy-security.mjs
       - name: Verify dashboard contracts and bundle boundary
