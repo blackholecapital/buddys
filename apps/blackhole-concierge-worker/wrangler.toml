@@ -63,4 +63,35 @@ head_sampling_rate = 1
 #   npx wrangler secret put BLACKHOLE_CAPABILITY_TOKEN --config apps/blackhole-concierge-worker/wrangler.toml
 
 [secrets]
-required = ["INTERNAL_CALL_SECRET", "DOCUSIGN_CONNECT_HMAC_SECRET"]
+required = ["INTERNAL_CALL_SECRET", "DOCUSIGN_CONNECT_HMAC_SECRET", "DOCUSIGN_RSA_PRIVATE_KEY"]
+
+# Existing account bundle; values are resolved asynchronously per request.
+[[secrets_store_secrets]]
+binding = "DOCUSIGN_ACCOUNT_ID"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_DOCUSIGN_ACCOUNT_ID"
+
+[[secrets_store_secrets]]
+binding = "DOCUSIGN_USER_ID"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_DOCUSIGN_USER_ID"
+
+[[secrets_store_secrets]]
+binding = "DOCUSIGN_INTEGRATION_KEY"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_DOCUSIGN_INTEGRATION_KEY"
+
+[[secrets_store_secrets]]
+binding = "GOOGLE_CLIENT_ID"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_GOOGLE_CLIENT_ID"
+
+[[secrets_store_secrets]]
+binding = "GOOGLE_CLIENT_SECRET"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_GOOGLE_CLIENT_SECRET"
+
+[[secrets_store_secrets]]
+binding = "GOOGLE_REFRESH_TOKEN"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_GOOGLE_REFRESH_TOKEN"

@@ -1,3 +1,4 @@
+import { withSecrets } from "../../shared/worker-secrets.mjs";
 import catalog from "../../shared/buddy-catalog.cjs";
 import { verifyConnect } from "./connect-auth.js";
 import operatorAuth from "../../dashboard/shared/services/operator-auth.js";
@@ -446,7 +447,7 @@ async function handleRequest(request,env,ctx){
   return Response.json({ok:false,error:"Route not found"},{status:404});
 
 }
-export default { async fetch(request,env,ctx){
+const worker = { async fetch(request,env,ctx){
   if(request.headers.get("x-buddy-dashboard-managed")==="1"&&new URL(request.url).pathname.startsWith("/internal/")){
     const auth=await authorizeInternal(request,env);if(!auth.ok)return auth.response;
     const payload=await request.clone().json().catch(()=>({}));
@@ -457,3 +458,5 @@ export default { async fetch(request,env,ctx){
   }
   return handleRequest(request,env,ctx);
 }};
+
+export default { ...worker, fetch: withSecrets(worker.fetch, ["INTERNAL_CALL_SECRET", "DOCUSIGN_CONNECT_HMAC_SECRET", "DOCUSIGN_RSA_PRIVATE_KEY", "DOCUSIGN_ACCOUNT_ID", "DOCUSIGN_USER_ID", "DOCUSIGN_INTEGRATION_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN", "GOOGLE_ACCESS_TOKEN", "GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_OAUTH_REFRESH_TOKEN"]) };

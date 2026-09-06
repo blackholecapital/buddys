@@ -1,3 +1,4 @@
+import { withSecrets } from "../../shared/worker-secrets.mjs";
 import operatorAuth from "../../dashboard/shared/services/operator-auth.js";
 const RESEND_URL = "https://api.resend.com/emails";
 
@@ -20,7 +21,7 @@ async function emit(env, event) {
   try { await env.EVENTS.send({ ...event, ts:Date.now() }); } catch (error) { console.error("Buddy email event emit failed", error); }
 }
 
-export default {
+const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { status:204 });
@@ -104,3 +105,5 @@ export default {
     return Response.json({ ok:true, provider:"resend", messageId:data.id, messageType, callNowIncluded:Boolean(callNowUrl), signingLinkIncluded:Boolean(signingUrl), deliveryIncluded:messageType === "buddy-delivery-confirmed" });
   }
 };
+
+export default { ...worker, fetch: withSecrets(worker.fetch, ["INTERNAL_CALL_SECRET", "RESEND_API_KEY"]) };

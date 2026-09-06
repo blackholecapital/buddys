@@ -1,3 +1,4 @@
+import { withSecrets } from "../../shared/worker-secrets.mjs";
 import operatorAuth from "../../dashboard/shared/services/operator-auth.js";
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -90,7 +91,7 @@ async function sendSms(env, payload = {}) {
   return json({ ok:true, provider:"twilio", messageSid:result.sid || "", status:result.status || "queued", from:maskPhone(from), to:maskPhone(to), messageType });
 }
 
-export default {
+const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
 
@@ -121,3 +122,5 @@ export default {
     return json({ ok:false, error:"Route not found", path:url.pathname }, 404);
   },
 };
+
+export default { ...worker, fetch: withSecrets(worker.fetch, ["INTERNAL_CALL_SECRET", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER"]) };

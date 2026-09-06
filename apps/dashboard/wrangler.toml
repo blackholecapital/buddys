@@ -27,13 +27,13 @@ ALLOWED_ORIGINS = "https://buddys.pages.dev,https://buddys-4nm.pages.dev"
 [[d1_databases]]
 binding = "DB"
 database_name = "buddys-dashboard-db"
-database_id = "__BUDDYS_DASHBOARD_DB_ID__"
+database_id = "14229cf4-17bf-436f-a69f-00d133c12b5f"
 
 # Authoritative Buddy workflow/session state written by buddys-concierge-worker.
 [[d1_databases]]
 binding = "BUDDY_DB"
 database_name = "buddys-message-track-db"
-database_id = "__BUDDYS_MESSAGE_TRACK_DB_ID__"
+database_id = "34ef42d7-ccef-4ba4-b57c-ecabc5ad8f81"
 
 # --- Queues ---
 # Dashboard produces Buddy-specific follow-up jobs.

@@ -1,3 +1,4 @@
+import { withSecrets } from "../../shared/worker-secrets.mjs";
 import { handleTwilioMediaSocket } from "./media.js";
 
 function json(data, status = 200) {
@@ -150,7 +151,7 @@ function buildFallbackTwiml(context) {
   return `<Response><Pause length="1"/><Say voice="Polly.Joanna">Hi ${escapeXml(context.firstName)}. This is Buddy, your personal shopping assistant from Buddy's Home Furnishings. I saw that you're interested in ${escapeXml(context.interest)}. I'm calling because you asked to speak with me. The live conversational assistant is connecting now.</Say><Pause length="1"/><Say voice="Polly.Joanna">Thanks. This test confirms that your lead information successfully reached the voice system.</Say></Response>`;
 }
 
-export default {
+const worker = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
@@ -245,3 +246,5 @@ export default {
     return json({ ok:false, error:"Route not found", path:url.pathname }, 404);
   },
 };
+
+export default { ...worker, fetch: withSecrets(worker.fetch, ["INTERNAL_CALL_SECRET", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER", "DEEPGRAM_API_KEY", "BUDDY_RUNTIME_TOKEN", "OPENAI_API_KEY"]) };

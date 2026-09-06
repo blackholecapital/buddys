@@ -9,11 +9,15 @@ on:
       - "apps/frontend/**"
       - "apps/dashboard/**"
       - "apps/shared/**"
+      - "apps/voice-worker/**"
       - "apps/sms-worker/**"
       - "apps/email-worker/**"
       - "blackhole-runtime/**"
       - "scripts/test-video-commerce.mjs"
       - "scripts/test-buddy-security.mjs"
+      - "scripts/test-worker-secrets.mjs"
+      - "scripts/deploy-buddy-bindings.py"
+      - "scripts/test-buddy-binding-deploy.py"
       - "scripts/test-buddy-messaging-ui.mjs"
       - "scripts/test-buddy-showroom-browser.mjs"
       - "scripts/browser/**"
@@ -30,11 +34,15 @@ on:
       - "apps/frontend/**"
       - "apps/dashboard/**"
       - "apps/shared/**"
+      - "apps/voice-worker/**"
       - "apps/sms-worker/**"
       - "apps/email-worker/**"
       - "blackhole-runtime/**"
       - "scripts/test-video-commerce.mjs"
       - "scripts/test-buddy-security.mjs"
+      - "scripts/test-worker-secrets.mjs"
+      - "scripts/deploy-buddy-bindings.py"
+      - "scripts/test-buddy-binding-deploy.py"
       - "scripts/test-buddy-messaging-ui.mjs"
       - "scripts/test-buddy-showroom-browser.mjs"
       - "scripts/browser/**"
@@ -59,6 +67,8 @@ jobs:
         run: node scripts/test-video-config.mjs
       - name: Verify video commerce through Pages and the sealed adapter
         run: node --experimental-strip-types scripts/test-video-commerce.mjs
+      - name: Verify central provider bindings
+        run: node scripts/test-worker-secrets.mjs && node --experimental-strip-types scripts/test-video-commerce.mjs --secrets-store && python3 scripts/test-buddy-binding-deploy.py
       - name: Verify messaging UI lifecycle
         run: node scripts/test-buddy-messaging-ui.mjs
       - name: Verify Cloudflare inventory redaction
