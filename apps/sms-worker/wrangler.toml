@@ -15,4 +15,15 @@ head_sampling_rate = 1
 enabled = true
 
 [secrets]
-required = ["INTERNAL_CALL_SECRET", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER"]
+required = ["INTERNAL_CALL_SECRET", "TWILIO_PHONE_NUMBER"]
+
+# Existing account bundle; values are resolved asynchronously per request.
+[[secrets_store_secrets]]
+binding = "TWILIO_ACCOUNT_SID"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_TWILIO_ACCOUNT_SID"
+
+[[secrets_store_secrets]]
+binding = "TWILIO_AUTH_TOKEN"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_TWILIO_AUTH_TOKEN"

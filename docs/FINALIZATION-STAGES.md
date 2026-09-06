@@ -65,6 +65,11 @@ Exit: category browsing and selection work on desktop/mobile using approved prod
 
 ## Pass 5 — Rate Limits & Capacity
 
+Deployment prerequisite follow-up: [PASS-4B-PROVIDER-BINDINGS.md](PASS-4B-PROVIDER-BINDINGS.md)
+implements central provider bindings and a preflighted core deployment command.
+RSA/HMAC presence is confirmed by the September 6 inventory. Channel credentials,
+internal-secret alignment, operator Access and live acceptance remain pending.
+
 - Expand the existing Rate Limits page into the scaling panel.
 - Replace the shared timestamp bucket with atomic per-channel limits and concurrency authority.
 - Add Buddy video allocation, active/waiting sessions, warm-capacity requests, backpressure, retry/fallback rules, kill switches and usage/cost guards.

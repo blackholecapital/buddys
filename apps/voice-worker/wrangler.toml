@@ -25,7 +25,7 @@ head_sampling_rate = 1
 enabled = true
 
 [secrets]
-required = ["INTERNAL_CALL_SECRET", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER", "DEEPGRAM_API_KEY", "BUDDY_RUNTIME_TOKEN"]
+required = ["INTERNAL_CALL_SECRET", "TWILIO_PHONE_NUMBER", "BUDDY_RUNTIME_TOKEN"]
 
 [version_metadata]
 binding = "CF_VERSION_METADATA"
@@ -37,3 +37,19 @@ queue = "buddys-communication-events"
 [[analytics_engine_datasets]]
 binding = "ANALYTICS"
 dataset = "buddys_voice_events"
+
+# Existing account bundle; values are resolved asynchronously per request.
+[[secrets_store_secrets]]
+binding = "TWILIO_ACCOUNT_SID"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_TWILIO_ACCOUNT_SID"
+
+[[secrets_store_secrets]]
+binding = "TWILIO_AUTH_TOKEN"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_TWILIO_AUTH_TOKEN"
+
+[[secrets_store_secrets]]
+binding = "DEEPGRAM_API_KEY"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_DEEPGRAM_API_KEY"

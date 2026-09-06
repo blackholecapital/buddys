@@ -36,6 +36,15 @@ const env = {
   SMS:{ async fetch(req) { sent.push(await req.json()); return Response.json({ok:true}); } },
   EMAIL:{ async fetch(req) { const message=await req.json(); sent.push(message); return Response.json({ok:!(failAgreementEmail&&message.messageType==='buddy-docusign')}); } },
 };
+if (process.argv.includes('--secrets-store')) {
+  for (const name of ['DOCUSIGN_INTEGRATION_KEY','DOCUSIGN_USER_ID','DOCUSIGN_ACCOUNT_ID','DOCUSIGN_RSA_PRIVATE_KEY']) {
+    const value = env[name]; env[name] = {async get() { return value; }};
+  }
+  delete env.GOOGLE_ACCESS_TOKEN;
+  for (const name of ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','GOOGLE_REFRESH_TOKEN']) {
+    env[name] = {async get() { return 'test-only'; }};
+  }
+}
 let chatCalls = 0, failChat = false;
 const chatAdapter = createTenantAdapter({manifest,instructionsFor:()=>"You are Buddy. Stay within supplied product facts.",fetchImpl:async (url,options) => {
   assert.equal(new URL(url).pathname,'/chat');
@@ -71,7 +80,18 @@ globalThis.fetch = async (input,options={}) => {
     if (options.method === 'PUT') return Response.json(contacts.update(decodeURIComponent(url.pathname.split('/').pop()),JSON.parse(options.body)));
     return Response.json(db.readDb().contacts);
   }
-  if (url.hostname === 'account-d.docusign.com') return Response.json({access_token:'test-oauth',expires_in:3600});
+  if (url.hostname === 'account-d.docusign.com') {
+    const jwt = new URLSearchParams(options.body).get('assertion');
+    const claims = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url'));
+    assert.equal(claims.iss, 'test-only'); assert.equal(claims.sub, 'test-only');
+    return Response.json({access_token:'test-oauth',expires_in:3600});
+  }
+  if (url.hostname === 'oauth2.googleapis.com') {
+    const form = new URLSearchParams(options.body);
+    for (const name of ['client_id','client_secret','refresh_token']) assert.equal(form.get(name),'test-only');
+    return Response.json({access_token:'test-only'});
+  }
+  if (url.hostname === 'www.googleapis.com') assert.equal(options.headers.Authorization, 'Bearer test-only');
   if (url.hostname === 'demo.docusign.net' && url.pathname.endsWith('/envelopes')) { envelopeCalls++; return Response.json({envelopeId:'envelope-test',status:'sent'}); }
   if (url.hostname === 'demo.docusign.net' && url.pathname.endsWith('/views/recipient')) return Response.json({url:'https://sign.test/agreement'});
   if (url.hostname === 'www.googleapis.com' && url.pathname.endsWith('/freeBusy')) return Response.json({calendars:{primary:{busy:[]}}});

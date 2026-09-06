@@ -12,4 +12,10 @@ enabled = true
 head_sampling_rate = 1
 
 [secrets]
-required = ["INTERNAL_CALL_SECRET", "RESEND_API_KEY"]
+required = ["INTERNAL_CALL_SECRET"]
+
+# Existing account bundle; values are resolved asynchronously per request.
+[[secrets_store_secrets]]
+binding = "RESEND_API_KEY"
+store_id = "00b34d29f2c94685b0f250dc5b1ee875"
+secret_name = "XYZ_DEMO_RESEND_API_KEY"
