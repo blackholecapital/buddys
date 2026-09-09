@@ -12,6 +12,7 @@ const orchestrator = require("./functions/api/orchestrator");
 const systemStatus = require("./functions/api/system-status");
 const contacts = require("./functions/api/contacts");
 const leads = require("./functions/api/leads");
+const callCenter = require("./functions/api/call-center");
 const calls = require("./functions/api/calls");
 const callNow = require("./functions/api/call-now");
 const showroom = require("./functions/api/showroom");
@@ -50,6 +51,7 @@ function routeRequest(pathname, method, query = {}, headers = {}) {
   if (parts[0] === "api" && parts[1] === "conversations" && parts[2]) return { fn: conversationsHandler, params: { id: parts[2] } };
 
   if (pathname === "/api/leads") return { fn: leads, params:{} };
+  if (pathname === "/api/call-center") return { fn: callCenter, params:{} };
   if (pathname === "/api/calls") return { fn: calls, params:{} };
   if (pathname === "/api/call-now") return { fn: callNow, params:{ id:query.id || "", sig:query.sig || "" } };
   if (pathname === "/api/showroom") return { fn: showroom, params:{category:query.category || ""} };

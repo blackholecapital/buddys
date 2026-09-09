@@ -119,7 +119,7 @@ async function mergedContacts(env) {
 
   for (const state of live) {
     const baseRow = byId.get(state.id) || {};
-    const merged = { ...baseRow, ...state };
+    const merged = { ...baseRow, ...state, optedOut:Boolean(baseRow.optedOut || state.optedOut) };
     merged._dashboardStage = baseRow._dashboardStage || baseRow.stage || "New Lead";
     byId.set(state.id, merged);
   }
@@ -153,3 +153,5 @@ module.exports = async function handler({ method, body, params, env }) {
   if (method === "DELETE") return { ok:true, data:contacts.remove(params.id) };
   return { ok:false, error:"Unsupported contacts operation" };
 };
+
+module.exports.mergedContacts = mergedContacts;
