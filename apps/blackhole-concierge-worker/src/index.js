@@ -89,9 +89,9 @@ async function requestBuddyCall(env,contact,trigger={}){
   if(!env.VOICE)return{ok:false,error:"VOICE binding not configured"};
   const payload={contactId:contact.id||trigger.contactId||"",contact,context:{firstName:contact.firstName,lastName:contact.lastName,phone:contact.phone,email:contact.email,interest:contact.interest,location:contact.location,comments:contact.comments,leadScore:contact.leadScore,preferredContactTime:contact.preferredContactTime,source:contact.source},trigger};
   const response=await env.VOICE.fetch(new Request("https://voice.internal/internal/calls",{method:"POST",headers:{"Content-Type":"application/json","x-internal-call-secret":env.INTERNAL_CALL_SECRET},body:JSON.stringify(payload)}));
-  const text=await response.text();let result={};try{result=text?JSON.parse(text):{};}catch{result={raw:text};}if(!response.ok)throw new Error(result?.error||`Voice call failed (${response.status})`);
-  await persistContact(env,contact,{stage:"Contacted",callStatus:"Call requested"});
-  await updateDashboardContact(env,contact.id,{stage:"Contacted",callStatus:"Call requested"});
+  const text=await response.text();let result={};try{result=text?JSON.parse(text):{};}catch{result={raw:text};}if(!response.ok||!result?.ok||!result?.callSid)throw new Error(result?.error||`Voice call was not confirmed (${response.status})`);
+  await persistContact(env,contact,{callStatus:"Call requested"});
+  await updateDashboardContact(env,contact.id,{callStatus:"Call requested"});
   await emit(env,{type:"call.requested",contactId:contact.id||"",payload});return result;
 }
 

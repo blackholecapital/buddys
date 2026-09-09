@@ -37,6 +37,8 @@ const PERMISSION_MAP = {
  * Route → required permission mapping.
  */
 const ROUTE_PERMISSIONS = {
+  "GET /api/call-center": "contacts:read",
+  "POST /api/call-center": "contacts:write",
   "POST /api/calls": "contacts:write",
   "GET /api/dashboard": "dashboard:read",
   "GET /api/orchestrator": "dashboard:read",

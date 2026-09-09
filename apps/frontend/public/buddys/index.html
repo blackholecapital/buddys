@@ -6,6 +6,7 @@
   <title>Contact Buddy's Home Furnishings</title>
   <meta name="description" content="Contact Buddy's Home Furnishings about furniture, appliances, electronics, computers, financing, and store services.">
   <link rel="stylesheet" href="./optin.css">
+  <link rel="stylesheet" href="./experience.css">
 </head>
 
 <body>
@@ -33,16 +34,16 @@
     <p class="buddy-contact-copy">Complete the form below and a local Buddy&#39;s representative will contact you shortly.</p>
     <div class="instant-video-card" aria-labelledby="instant-video-title">
       <div>
-        <p class="eyebrow">AI PERSONAL SHOPPER</p>
-        <h2 id="instant-video-title">Message or video chat with Buddy</h2>
-        <p>No form required. Start with private messaging, then connect on live video whenever you are ready.</p>
+        <p class="eyebrow">EXPLORE WITH BUDDY</p>
+        <h2 id="instant-video-title">Virtual showroom, messaging &amp; video</h2>
+        <p>Meet your personal shopper. Ask questions, explore featured products, or connect on video — no form required.</p>
       </div>
       <div class="instant-chat-actions">
         <button type="button" id="instantMessageButton" class="message-cta">Message Buddy</button>
-        <button type="button" id="instantVideoButton" class="video-cta">Connect on Video</button>
+        <button type="button" id="instantVideoButton" class="video-cta">Video Buddy</button>
+        <button type="button" id="instantShowroomButton" class="message-cta">Virtual Showroom</button>
       </div>
     </div>
-    <p class="security-notice"><strong>Your Information is Secure</strong><br><br>Never enter credit card or payment-source details on this form. To make a payment, use the official online payment link or call your store.</p>
   </section>
 
   <section class="lead-section" id="contact-form">
@@ -131,19 +132,11 @@
   <div class="video-room">
     <div class="video-topbar">
       <div><span class="live-dot" aria-hidden="true"></span><b id="buddyVideoTitle">Buddy Personal Shopper</b></div>
+      <nav class="buddy-mode-tabs" aria-label="Buddy experience"><button type="button" data-buddy-mode="message">Message Buddy</button><button type="button" data-buddy-mode="video">Video Buddy</button><button type="button" data-buddy-mode="showroom">Virtual Showroom</button></nav>
       <button type="button" id="closeVideoButton" class="video-close" aria-label="Close Buddy chat">&times;</button>
     </div>
 
     <div class="buddy-live-workspace">
-      <section id="buddyShowroom" class="buddy-showroom" aria-labelledby="buddyShowroomTitle">
-        <div class="showroom-heading"><span>YOUR PERSONAL SHOWROOM</span><h2 id="buddyShowroomTitle">Find your next favorite.</h2>
-          <label for="buddyCategory">Explore a category</label><select id="buddyCategory"><option value="">Choose a category</option></select>
-          <p id="buddyShowroomNotice">Compare two options with Buddy.</p>
-        </div>
-        <div id="buddyProductCards" class="showroom-products"></div>
-        <section id="buddyProductDetail" class="showroom-detail" aria-label="Product details" hidden></section>
-      </section>
-      <div class="buddy-side-panel">
       <section class="video-stage" aria-label="Buddy live video">
         <div id="buddyVideoMount" class="video-mount">
           <div class="video-placeholder">
@@ -181,7 +174,14 @@
           <button type="submit">Send</button>
         </form>
       </aside>
-      </div>
+      <section id="buddyShowroom" class="buddy-showroom" aria-labelledby="buddyShowroomTitle">
+        <div class="showroom-heading"><span>CURATED FOR YOUR CONVERSATION</span><h2 id="buddyShowroomTitle">Featured product</h2>
+          <label for="buddyCategory">Explore a category</label><select id="buddyCategory"><option value="">Choose a category</option></select>
+          <p id="buddyShowroomNotice">Explore one featured example at a time.</p>
+        </div>
+        <div id="buddyProductCards" class="showroom-products"></div>
+        <section id="buddyProductDetail" class="showroom-detail" aria-label="Product details" hidden></section>
+      </section>
     </div>
   </div>
 </div>

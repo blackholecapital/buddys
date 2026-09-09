@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import { webcrypto } from 'node:crypto';
 class Element {
-  constructor() { this.children=[]; this.listeners={}; this.style={}; this.value=''; this.disabled=false; this.textContent=''; this.classes=new Set(); this.classList={add:x=>this.classes.add(x),remove:x=>this.classes.delete(x),contains:x=>this.classes.has(x)}; }
+  constructor() { this.dataset={}; this.children=[]; this.listeners={}; this.style={}; this.value=''; this.disabled=false; this.textContent=''; this.classes=new Set(); this.classList={add:x=>this.classes.add(x),remove:x=>this.classes.delete(x),contains:x=>this.classes.has(x)}; }
   addEventListener(name,fn) { this.listeners[name]=fn; }
   async emit(name,extra={}) { return this.listeners[name]?.({preventDefault(){},...extra}); }
   setAttribute() {}
@@ -17,7 +17,7 @@ class Element {
   focus() {}
   remove() {}
 }
-const ids=['buddyVideoModal','buddyVideoMount','buddyConnectButton','buddyMicButton','instantMessageButton','instantVideoButton','closeVideoButton','buddyHangupButton','buddyChatForm','buddyChatInput','buddyChatStream','buddyChatState','buddyResourcePanel','buddyResourceList','buddyVideoStatus'];
+const ids=['buddyVideoTitle','instantShowroomButton','buddyVideoModal','buddyVideoMount','buddyConnectButton','buddyMicButton','instantMessageButton','instantVideoButton','closeVideoButton','buddyHangupButton','buddyChatForm','buddyChatInput','buddyChatStream','buddyChatState','buddyResourcePanel','buddyResourceList','buddyVideoStatus'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element()]));
 const document=new Element(); document.getElementById=id=>elements[id]; document.createElement=()=>new Element(); document.body=new Element();document.head=new Element();
 const window=new Element(), storage=new Map(), requests=[];
@@ -70,6 +70,12 @@ failMic=false;
 await click('buddyConnectButton');
 assert.equal(mediaLoads,1);
 const upgrade=requests.find(r=>r.url==='/api/video/session');assert.equal(upgrade.body.chatSessionId,'chat-1');
+const beforeShowroom=requests.filter(r=>r.url==='/api/video/session').length;
+await click('instantShowroomButton');
+assert.equal(elements.buddyVideoModal.dataset.experience,'showroom');
+assert.equal(elements.buddyMicButton.disabled,true);
+assert.equal(requests.filter(r=>r.url==='/api/video/session').length,beforeShowroom,'Switch to showroom must not allocate video');
+await submit('Showroom chat still works');
 await click('closeVideoButton');
 const transcript=requests.find(r=>r.url==='/api/video/transcript');assert.equal(transcript.body.messages.length,0,'Restored text is not uploaded as new video transcript');
 await click('instantMessageButton');

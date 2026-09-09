@@ -13,7 +13,7 @@ async function request(env, path, method = "GET", body) {
     headers["x-internal-call-secret"] = env.INTERNAL_CALL_SECRET;
   }
 
-  if(body?.contactId) body={...body,contact:contacts.list().find(c=>c.id===body.contactId)||body.contact};
+  if(body?.contactId) body={...body,contact:body.contact||contacts.list().find(c=>c.id===body.contactId)};
   const res = await env.CONCIERGE.fetch(
     new Request("https://concierge.internal" + path, {
       method,

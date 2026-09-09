@@ -20,6 +20,8 @@ on:
       - "scripts/test-buddy-binding-deploy.py"
       - "scripts/test-buddy-messaging-ui.mjs"
       - "scripts/test-buddy-showroom-browser.mjs"
+      - "scripts/test-buddy-call-center.cjs"
+      - "scripts/test-buddy-call-center-browser.mjs"
       - "scripts/browser/**"
       - "scripts/cloudflare-buddy-inventory.py"
       - "scripts/test-cloudflare-buddy-inventory.py"
@@ -45,6 +47,8 @@ on:
       - "scripts/test-buddy-binding-deploy.py"
       - "scripts/test-buddy-messaging-ui.mjs"
       - "scripts/test-buddy-showroom-browser.mjs"
+      - "scripts/test-buddy-call-center.cjs"
+      - "scripts/test-buddy-call-center-browser.mjs"
       - "scripts/browser/**"
       - "scripts/cloudflare-buddy-inventory.py"
       - "scripts/test-cloudflare-buddy-inventory.py"
@@ -85,3 +89,6 @@ jobs:
         run: npm run validate --prefix blackhole-runtime
       - name: Build customer frontend
         run: npm ci --prefix apps/frontend && npm run build --prefix apps/frontend
+
+      - name: Verify Call Center persistence and operator interface
+        run: node scripts/test-buddy-call-center.cjs && node scripts/test-buddy-call-center-browser.mjs
