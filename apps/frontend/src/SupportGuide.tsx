@@ -36,7 +36,7 @@ const articles = [
   {
     category: "Calls & callbacks",
     title: "How do I return a customer call?",
-    text: "Open Call Center → Lead queue. Select the customer, check their phone number and request, then choose Call customer. Review the confirmation and press Start call. Buddy places an outbound voice call through the existing voice service. An accepted request is not proof the customer answered. Follow the outcome in Calls. Opted-out customers cannot be called from this interface.",
+    text: "Open Call Center → Lead queue. Select the customer, check their phone number and request, then choose Call customer. Review the confirmation and press Start call. Buddy places an outbound voice call through the existing voice service. An accepted request is not proof the customer answered. Follow the outcome in Call Center → Conversations. Opted-out customers cannot be called from this interface.",
   },
   {
     category: "Calls & callbacks",
@@ -51,7 +51,7 @@ const articles = [
   {
     category: "Calls & callbacks",
     title: "Where are recordings and transcripts?",
-    text: "Calls shows captured voice activity with a provider call ID. Select a card or choose a call from the history selector to read its captured transcript and events. Missing transcript text means it was not captured or has not arrived yet. This interface does not provide an audio recording player. History is a recent telemetry window, not a complete permanent archive.",
+    text: "Conversations shows captured voice activity with a provider call ID. Select a card or choose a call from the history selector to read its captured transcript and events. Missing transcript text means it was not captured or has not arrived yet. This interface does not provide an audio recording player. History is a recent telemetry window, not a complete permanent archive.",
   },
   {
     category: "Calls & callbacks",
@@ -71,7 +71,7 @@ const articles = [
   {
     category: "Corporate & integrations",
     title: "What can corporate users oversee?",
-    text: "Use Operations for pipeline and fulfillment status, Conversations for captured voice transcripts, and Analytics for recent workflow event counts. Counts reflect the records loaded by this dashboard. This Call Center shares Buddy customer records and voice services; it does not change other products or the shared AI runtime.",
+    text: "Use Operations for pipeline and fulfillment status, Call Center → Conversations for captured voice transcripts, and Analytics for recent workflow event counts. Counts reflect the records loaded by this dashboard. This Call Center shares Buddy customer records and voice services; it does not change other products or the shared AI runtime.",
   },
   {
     category: "Corporate & integrations",

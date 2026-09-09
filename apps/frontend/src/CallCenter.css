@@ -3,8 +3,7 @@
   padding: 22px;
   background: #fff;
   border: 1px solid #e1e7ef;
-  border-top: 0;
-  border-radius: 0 0 16px 16px;
+  border-radius: 16px;
 }
 .cc-heading,
 .cc-toolbar {

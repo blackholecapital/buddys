@@ -4,7 +4,7 @@
   const detail = document.getElementById('buddyProductDetail');
   const categorySelect = document.getElementById('buddyCategory');
   const notice = document.getElementById('buddyShowroomNotice');
-  let state = {products:[]}, callbacks = {}, openedId = '';
+  let state = {products:[]}, callbacks = {}, openedId = '', featuredId = '';
   function node(tag, text, className) {
     const el=document.createElement(tag);
     if(text)el.textContent=text;
@@ -31,7 +31,7 @@
   function open(product,index) {
     openedId=product.id;
     detail.replaceChildren();detail.hidden=false;
-    const back=button('Back to both options',()=>{detail.hidden=true;openedId='';cards.hidden=false;cards.querySelector('button')?.focus();});
+    const back=button('Back to featured product',()=>{detail.hidden=true;openedId='';cards.hidden=false;cards.querySelector('button')?.focus();});
     const title=node('h3',product.name);title.tabIndex=-1;
     const specs=node('dl',null,'showroom-specs');
     for(const spec of product.specs || [])specs.append(node('dt',spec.label),node('dd',spec.value));
@@ -66,17 +66,27 @@
     notice.textContent=next.locked?'Your selected order is saved. Ask your store about changes.':next.canSelect?'Compare two options, then select an item to prepare your demo agreement.':'Explore the showroom. Add your preferences when you are ready to select.';
     cards.replaceChildren();cards.hidden=false;detail.replaceChildren();detail.hidden=true;openedId='';
     if(!next.products?.length)cards.append(node('p','Choose a category to explore two demo options.','showroom-empty'));
-    for(const [index,product] of (next.products || []).entries()){
+    const products=next.products || [];
+    const featured=products.find(p=>p.name===next.selectedProduct)||products.find(p=>p.id===featuredId)||products[0];
+    featuredId=featured?.id || '';
+    for(const [index,product] of products.entries()){
+      if(product.id!==featuredId)continue;
       const card=node('article',null,'showroom-product');card.dataset.productId=product.id;
       const badge=node('span',next.selectedProduct===product.name?'YOUR SELECTION':`OPTION ${index+1}`,'showroom-option');
       card.append(image(product),badge,node('h3',product.name),node('p',product.description),
         node('span','Illustration · confirm model and terms','showroom-caption'),button('View details',()=>open(product,index)));
       if(!next.locked)card.append(select(product,index));
+      if(products.length>1&&!next.locked)card.append(button('See another example',()=>{featuredId=products[(index+1)%products.length].id;render(state,callbacks);}));
       cards.append(card);
       callbacks.onEvent?.('product.shown',product);
     }
   }
   categorySelect.addEventListener('change',()=>{if(categorySelect.value)callbacks.onCategory?.(categorySelect.value);});
-  window.BuddyShowroom={render,setBusy(busy){categorySelect.disabled=Boolean(busy||state.locked);panel.querySelectorAll('button').forEach(b=>{b.disabled=busy;});},
+  window.BuddyShowroom={render,followMessage(text){
+    if(state.locked||state.busy)return;
+    const normalized=String(text||'').toLowerCase();
+    const product=state.products?.find(p=>normalized.includes(p.name.toLowerCase()));
+    if(product&&product.id!==featuredId){featuredId=product.id;render(state,callbacks);}
+  },setBusy(busy){state.busy=busy;categorySelect.disabled=Boolean(busy||state.locked);panel.querySelectorAll('button').forEach(b=>{b.disabled=busy;});},
     closeDetails(){if(!openedId)return false;detail.hidden=true;cards.hidden=false;openedId='';cards.querySelector('button')?.focus();return true;}};
 })();

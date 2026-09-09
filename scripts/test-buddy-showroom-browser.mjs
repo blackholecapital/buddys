@@ -23,7 +23,7 @@ const server=http.createServer(async(req,res)=>{
       let data;
       if(url.pathname==='/api/chat/session') {linked=Boolean(body.contactId);data={ok:true,contactId:linked?'lead-1':'',sessionId:'chat-1',chatSessionId:'chat-1',chatToken:'fixture-chat',workflowToken:linked?'fixture-workflow':'',history:{messages:[]},workflow:linked?workflow():{phase:'guest'}};}
       else if(url.pathname==='/api/showroom')data=req.method==='GET'?{ok:true,categories:catalog.categories,category:catalog.categoryFor(url.searchParams.get('category')),products:catalog.products(url.searchParams.get('category'))}:{ok:true};
-      else if(url.pathname==='/api/chat/message')data={ok:true,response:'Happy to help you compare the options.'};
+      else if(url.pathname==='/api/chat/message')data={ok:true,response:'Let’s look at '+catalog.products(category)[1].name+'. Happy to help you compare the options.'};
       else if(url.pathname==='/api/video/session')data={ok:false,error:'Media unavailable in this fixture'};
       else if(url.pathname==='/api/video/action') {
         if(body.action==='category-selected'){category=body.category;data={ok:true,workflow:workflow()};}
@@ -50,9 +50,19 @@ try {
     page.on('pageerror',error=>errors.push(error.message));
     await page.route('https://**/*',route=>route.abort());
     await page.goto(origin+'/buddys/');
-    await page.click('#instantMessageButton');
+    await page.click('#instantShowroomButton');
+    await page.getByText('Coming Soon',{exact:true}).waitFor();
+    await page.click('[data-buddy-mode=message]');
     await page.waitForSelector('.showroom-product');
-    assert.equal(await page.locator('.showroom-product').count(),2);
+    assert.equal(await page.locator('.showroom-product').count(),1);
+    await page.getByRole('button',{name:'See another example',exact:true}).click();
+    assert.match(await page.locator('.showroom-product h3').innerText(),new RegExp(catalog.products(category)[1].name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+    await page.click('[data-buddy-mode=showroom]');
+    await page.getByText('Coming Soon',{exact:true}).waitFor();
+    assert.equal(requests.filter(r=>r.path==='/api/video/session').length,0);
+    assert.equal(await page.locator('#buddyChatInput').isEnabled(),true);
+    if(shots)await page.screenshot({path:path.join(shots,`virtual-showroom-${viewport.width}.png`)});
+    await page.click('[data-buddy-mode=message]');
     assert.equal(requests.filter(r=>r.path==='/api/video/session').length,0);
     assert.equal(await page.locator('script[src*="livekit"]').count(),0);
     await page.selectOption('#buddyCategory','Gaming');
@@ -75,6 +85,8 @@ try {
     await page.fill('#buddyChatInput','Can you tell me about the first option?');await page.locator('#buddyChatForm button').click();
     await page.waitForFunction(()=>!document.getElementById('buddyChatInput').disabled);
     assert.equal(requests.filter(r=>r.body.action==='product-selected').length,0,'Inquiry must not create an agreement');
+    assert.equal(await page.locator('.showroom-product h3').innerText(),catalog.products(category)[1].name,'Buddy product mention follows the featured tile');
+    await page.getByRole('button',{name:'See another example',exact:true}).click();
     if(shots && viewport.width!==320) {
       await page.locator('.video-room').evaluate(el=>{el.scrollTop=0;});
       await page.waitForTimeout(150);

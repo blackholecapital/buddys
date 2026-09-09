@@ -14,6 +14,7 @@
   const resourcePanel = document.getElementById("buddyResourcePanel");
   const resourceList = document.getElementById("buddyResourceList");
 
+  let experienceMode = "message";
   let room = null;
   let chatMeta = null;
   let chatPromise = null;
@@ -51,6 +52,7 @@
   }
 
   function setStatus(message) {
+    if(experienceMode === "showroom")return;
     const node = statusNode();
     if (node) node.textContent = message;
   }
@@ -66,6 +68,10 @@
   }
 
   function renderPlaceholder(message, detail = "Message now or connect on video when ready") {
+    if(experienceMode === "showroom") {
+      mount.innerHTML = `<div class="showroom-preview"><span class="preview-label">VIRTUAL SHOWROOM PREVIEW</span><img class="preview-furniture" src="./images/showroom/sofa.svg" alt="Illustrated furniture showroom placeholder"><img class="preview-buddy" src="./images/buddy-avatar.jpg" alt="Buddy"><div class="preview-caption"><b id="buddyVideoStatus">Coming Soon</b><span>Buddy’s immersive showroom</span><p>Explore products and chat with Buddy today.</p></div></div>`;
+      return;
+    }
     mount.innerHTML = `<div class="video-placeholder">
       <img src="./images/buddy-avatar.jpg" alt="Buddy, your personal shopper">
       <b id="buddyVideoStatus"></b>
@@ -404,6 +410,7 @@
     chatStream.appendChild(bubble);
     chatStream.scrollTop = chatStream.scrollHeight;
     urlsIn(message).forEach(addResource);
+    if(sender === "buddy")window.BuddyShowroom?.followMessage(message);
   }
 
   function rememberTranscript(role, text, segmentId = "", shouldPersist = true) {
@@ -496,7 +503,15 @@
     finally { if (epoch === workspaceEpoch) chatPromise = null; }
   }
 
-  async function showWorkspace(context = {}, startVideo = false) {
+  function setExperience(mode) {
+    experienceMode=mode;
+    modal.dataset.experience=mode;
+    document.getElementById("buddyVideoTitle").textContent=mode==="showroom"?"Buddy Virtual Showroom":mode==="video"?"Video with Buddy":"Message Buddy";
+    document.querySelectorAll('[data-buddy-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.buddyMode===mode)));
+  }
+  async function showWorkspace(context = {}, startVideo = false, mode = startVideo ? "video" : "message") {
+    if(closing||chatInput.disabled||workflow.busy)return;
+    if((room||sessionPromise)&&mode!==experienceMode)await closeWorkspace();
     if (context.contactId && context.contactId !== pendingContext.contactId) {
       await closeWorkspace();
       pendingContext = pendingContext.contactId ? {source:"lead-form"} : {
@@ -506,6 +521,8 @@
       resourceList.replaceChildren();
       sharedUrls.clear();
     }
+    setExperience(mode);
+    if(!room)renderPlaceholder("Ready to message Buddy");
     pendingContext = { ...pendingContext, ...context };
     saveContext();
     modal.classList.remove("hidden");
@@ -736,6 +753,8 @@
       return;
     }
     try {
+      setExperience("video");
+      if(!room)renderPlaceholder("Connecting Buddy’s live avatar…");
       setConnect("Connecting Video…", true);
       setStatus("Connecting Buddy's live avatar…");
       await ensureSession();
@@ -839,6 +858,8 @@
     }
   });
 
+  document.getElementById("instantShowroomButton")?.addEventListener("click",()=>showWorkspace({source:"direct-showroom"},false,"showroom"));
+  document.querySelectorAll('[data-buddy-mode]').forEach(button=>button.addEventListener('click',()=>showWorkspace({},button.dataset.buddyMode==='video',button.dataset.buddyMode)));
   messageButton.addEventListener("click", () => showWorkspace({ source:"direct-message" }, false));
   videoButton.addEventListener("click", () => showWorkspace({ source:"direct-video" }, true));
   connectButton.addEventListener("click", enableVideo);

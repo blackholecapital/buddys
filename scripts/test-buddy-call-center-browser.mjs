@@ -189,7 +189,7 @@ try {
   assert.equal(callbacks[0].note, "Updated request");
   await page.getByRole("button", { name: "Handled", exact: true }).click();
   await page.getByRole("heading", { name: "No callbacks waiting" }).waitFor();
-  await page.getByRole("button", { name: "Calls", exact: true }).click();
+  await page.getByRole("button", { name: "Conversations", exact: true }).click();
   await page
     .getByText("A sectional. Could you call me after work?", { exact: true })
     .waitFor();

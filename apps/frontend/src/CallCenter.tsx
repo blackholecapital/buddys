@@ -301,7 +301,7 @@ export default function CallCenter({
       )}
       <div className="cc-toolbar">
         <div className="cc-tabs">
-          {["Lead queue", "Calls", "Callbacks"].map((name) => (
+          {["Lead queue", "Conversations", "Callbacks"].map((name) => (
             <button
               key={name}
               aria-pressed={section === name}
@@ -423,7 +423,7 @@ export default function CallCenter({
                   </article>
                 );
               })}
-          {section === "Calls" &&
+          {section === "Conversations" &&
             calls
               .filter((c) => {
                 const l = leads.find((l) => l.id === c.contactId);
@@ -473,7 +473,7 @@ export default function CallCenter({
               !pending.some((c) =>
                 leads.some((l) => l.id === c.contact_id && matches(l)),
               )) ||
-            (section === "Calls" &&
+            (section === "Conversations" &&
               !calls.some((c) => {
                 const l = leads.find((l) => l.id === c.contactId);
                 return l ? matches(l) : !query;
@@ -485,7 +485,7 @@ export default function CallCenter({
                   ? "No matching customers"
                   : section === "Callbacks"
                     ? "No callbacks waiting"
-                    : section === "Calls"
+                    : section === "Conversations"
                       ? "No captured calls yet"
                       : "Your call queue starts here"}
               </h3>

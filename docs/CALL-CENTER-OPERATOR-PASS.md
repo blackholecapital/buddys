@@ -1,7 +1,8 @@
 # Buddy Call Center and operating guide
 
-This pass adds Call Center beside Pipeline, Leads, Documents, and Deliveries at
-`/buddy-dashboard`. It uses Buddy's existing customer records, Concierge voice
+This pass replaces Conversations in the left navigation with Call Center at
+`/buddy-dashboard`. Conversations is a tab within Call Center; Operations keeps
+Pipeline, Leads, Documents, and Deliveries. It uses Buddy's existing customer records, Concierge voice
 service, and call telemetry. The pipeline styling is retained.
 
 ## Included
@@ -90,3 +91,27 @@ is ambiguous, inspect it before retrying.
 
 The broader capacity/rate-limit and shared-server controls remain separate work
 from this Buddy operator interface.
+
+## Customer experience layout follow-up
+
+Message Buddy, Video Buddy, and Virtual Showroom open the same three-panel
+workspace: a mode-specific Buddy view, live messaging, and a featured product.
+The showroom is an illustrated Coming Soon preview; it never allocates media
+until the customer explicitly connects on video. Leaving video for another mode
+disconnects the session and disables the microphone. Existing chat continuity,
+lead linking, signed selection and agreement/delivery workflows are retained.
+
+One product example is visible at a time. See another example reveals the second
+existing catalog option. An exact catalog product name in Buddy's reply updates
+the featured display only; it cannot select a product or send an agreement.
+Product details retain the existing allowlisted website links, illustrations,
+and store-confirmed terms. No live inventory, pricing, 3D runtime, automated
+callback dispatcher, or new CRM integration is introduced by this layout pass.
+
+The landing card now offers all three experiences with short descriptive copy;
+the yellow Your Information is Secure banner has been removed.
+
+Browser validation covers 1280/390/320px layouts, featured-product switching,
+showroom entry without media, explicit selection, video failure fallback, and
+working text controls. The media lifecycle fixture also checks switching from an
+active video session to the showroom.
