@@ -114,6 +114,12 @@ try {
     assert.ok(requests.some(r=>r.body.event==='product.shown'));assert.ok(requests.some(r=>r.body.event==='product.opened'));
     await page.click('[data-buddy-mode=video]');
     await page.waitForFunction(()=>document.getElementById('buddyConnectButton').textContent==='Try Video Again');
+    const desk=page.locator('.buddy-desk-preview');
+    assert.equal(await desk.isVisible(),true);
+    assert.match(await desk.getAttribute('src'),/buddy-avatar.jpg$/);
+    assert.equal(await page.locator('.buddy-reference-scene').count(),0,'Video preview must not use the showroom');
+    assert.equal(await desk.evaluate(el=>getComputedStyle(el).objectFit),'contain');
+    if(shots)await page.screenshot({path:path.join(shots,`video-desk-${viewport.width}.png`)});
     await page.fill('#buddyChatInput','Keep helping me here');await page.locator('#buddyChatForm button').click();
     await page.waitForFunction(()=>!document.getElementById('buddyChatInput').disabled);
     assert.equal(await page.locator('#buddyChatState').innerText(),'Ready to message');
