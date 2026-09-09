@@ -73,7 +73,7 @@
       return;
     }
     mount.innerHTML = `<div class="video-placeholder">
-      ${experienceMode === "video" ? '<img class="buddy-desk-preview" src="./images/buddy-avatar.jpg" alt="Buddy seated at the counter, with both arms and hands visible">' : '<div class="buddy-reference-scene" role="img" aria-label="Buddy standing in the furniture showroom"></div>'}
+      <img class="buddy-desk-preview" src="./images/buddy-desk-showroom.png" alt="Buddy smiling behind the showroom counter, with both arms and hands visible">
       <b id="buddyVideoStatus"></b>
       <span></span>
     </div>`;
@@ -590,6 +590,10 @@
       video.setAttribute("muted", "");
       video.setAttribute("playsinline", "");
       track.attach(video);
+      // Bind the live element to the stage bounds after the SDK attaches it.
+      video.className = "buddy-live-video";
+      video.style.objectFit = "contain";
+      video.style.objectPosition = "center";
       remoteVideoElement = video;
       if (videoEnabled) mount.replaceChildren(video);
       return;

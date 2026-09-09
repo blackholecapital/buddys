@@ -60,6 +60,9 @@ try {
     assert.ok(workspace.y>=header.y+header.height,'Workspace leaves the masthead visible');
     await page.click('[data-buddy-mode=message]');
     await page.waitForSelector('.showroom-product');
+    assert.equal(await page.locator('.buddy-desk-preview').isVisible(),true);
+    assert.equal(await page.locator('.buddy-reference-scene').count(),0);
+
     assert.equal(await page.locator('.showroom-product').count(),1);
     assert.match(await page.locator('.showroom-product img').getAttribute('src'),/couch.PNG$/);
     assert.equal(await page.locator('.showroom-features li').count(),4);
@@ -116,9 +119,18 @@ try {
     await page.waitForFunction(()=>document.getElementById('buddyConnectButton').textContent==='Try Video Again');
     const desk=page.locator('.buddy-desk-preview');
     assert.equal(await desk.isVisible(),true);
-    assert.match(await desk.getAttribute('src'),/buddy-avatar.jpg$/);
+    assert.match(await desk.getAttribute('src'),/buddy-desk-showroom.png$/);
     assert.equal(await page.locator('.buddy-reference-scene').count(),0,'Video preview must not use the showroom');
     assert.equal(await desk.evaluate(el=>getComputedStyle(el).objectFit),'contain');
+    // Intrinsic portrait dimensions must never enlarge a live element beyond the stage.
+    await page.evaluate(()=>{
+      const v=document.createElement('video');v.className='buddy-live-video';v.width=1024;v.height=1536;v.poster='/buddys/images/buddy-desk-showroom.png';
+      document.getElementById('buddyVideoMount').replaceChildren(v);
+    });
+    const live=await page.locator('.buddy-live-video').boundingBox();
+    const stage=await page.locator('#buddyVideoMount').boundingBox();
+    assert.ok(live.height<=stage.height+1 && live.width<=stage.width+1,'Live frame stays inside stage');
+    assert.equal(await page.locator('.buddy-live-video').evaluate(el=>getComputedStyle(el).objectFit),'contain');
     if(shots)await page.screenshot({path:path.join(shots,`video-desk-${viewport.width}.png`)});
     await page.fill('#buddyChatInput','Keep helping me here');await page.locator('#buddyChatForm button').click();
     await page.waitForFunction(()=>!document.getElementById('buddyChatInput').disabled);
