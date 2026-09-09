@@ -73,7 +73,7 @@
       return;
     }
     mount.innerHTML = `<div class="video-placeholder">
-      <div class="buddy-reference-scene" role="img" aria-label="Buddy standing in the furniture showroom"></div>
+      ${experienceMode === "video" ? '<img class="buddy-desk-preview" src="./images/buddy-avatar.jpg" alt="Buddy seated at the counter, with both arms and hands visible">' : '<div class="buddy-reference-scene" role="img" aria-label="Buddy standing in the furniture showroom"></div>'}
       <b id="buddyVideoStatus"></b>
       <span></span>
     </div>`;

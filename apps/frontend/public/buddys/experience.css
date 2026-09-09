@@ -58,3 +58,7 @@
 .showroom-features li{display:flex;align-items:flex-start;gap:7px}.showroom-features li::before{content:'✓';display:grid;place-items:center;flex:0 0 16px;height:16px;border-radius:50%;background:#2055b7;color:#fff;font-size:11px}
 .showroom-price{display:block;font-size:19px;font-weight:800;color:#12479e;margin:6px 0}.showroom-price small{display:block;font-size:9px;font-weight:400;color:#61748e;margin-top:3px}
 .showroom-quick-help{border:1px solid #e1e8f2;border-radius:9px;margin-top:15px;padding:12px}.showroom-quick-help h3{font-size:14px;color:#123d89;margin:0 0 8px}.showroom-quick-help button,.showroom-quick-help a{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;padding:8px 0;color:#1a4898;font:inherit;font-size:11px;text-decoration:none;cursor:pointer}.showroom-quick-help button:hover,.showroom-quick-help a:hover{text-decoration:underline}.showroom-product img{height:auto;aspect-ratio:5/3;object-fit:contain}.showroom-product .showroom-button:first-of-type{background:#2055b7;color:#fff;border-color:#2055b7}
+
+/* Video has its own seated preview; never reuse the standing showroom scene. */
+.video-placeholder:has(.buddy-desk-preview){background:#fff}
+.video-placeholder .buddy-desk-preview{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;aspect-ratio:auto;object-fit:contain;object-position:center;padding:44px 12px 82px;box-sizing:border-box;border-radius:0;box-shadow:none}
