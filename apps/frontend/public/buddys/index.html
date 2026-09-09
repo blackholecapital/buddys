@@ -132,7 +132,6 @@
   <div class="video-room">
     <div class="video-topbar">
       <div><span class="live-dot" aria-hidden="true"></span><b id="buddyVideoTitle">Buddy Personal Shopper</b></div>
-      <nav class="buddy-mode-tabs" aria-label="Buddy experience"><button type="button" data-buddy-mode="message">Message Buddy</button><button type="button" data-buddy-mode="video">Video Buddy</button><button type="button" data-buddy-mode="showroom">Virtual Showroom</button></nav>
       <button type="button" id="closeVideoButton" class="video-close" aria-label="Close Buddy chat">&times;</button>
     </div>
 
@@ -140,14 +139,15 @@
       <section class="video-stage" aria-label="Buddy live video">
         <div id="buddyVideoMount" class="video-mount">
           <div class="video-placeholder">
-            <img src="./images/buddy-avatar.jpg" alt="Buddy, your personal shopper">
+            <div class="buddy-reference-scene" role="img" aria-label="Buddy standing in the furniture showroom"></div>
             <b id="buddyVideoStatus">Opening private message room…</b>
             <span>Message now or connect on video when ready</span>
           </div>
         </div>
         <div class="video-controls">
           <button type="button" id="buddyMicButton" class="round-control" aria-label="Mute microphone" disabled>🎙</button>
-          <button type="button" id="buddyConnectButton" class="video-connect">Connect on Video</button>
+          <nav class="buddy-mode-tabs" aria-label="Buddy experience"><button type="button" data-buddy-mode="message">Message Buddy</button><button type="button" data-buddy-mode="video">Video Buddy</button><button type="button" data-buddy-mode="showroom">Virtual Showroom</button></nav>
+          <button type="button" id="buddyConnectButton" class="video-connect" hidden>Connect on Video</button>
           <button type="button" id="buddyHangupButton" class="round-control danger" aria-label="End session">☎</button>
         </div>
         <p class="video-privacy">Your microphone stays off until you connect on video. Never share payment-card details here.</p>
@@ -175,9 +175,9 @@
         </form>
       </aside>
       <section id="buddyShowroom" class="buddy-showroom" aria-labelledby="buddyShowroomTitle">
-        <div class="showroom-heading"><span>CURATED FOR YOUR CONVERSATION</span><h2 id="buddyShowroomTitle">Featured product</h2>
-          <label for="buddyCategory">Explore a category</label><select id="buddyCategory"><option value="">Choose a category</option></select>
-          <p id="buddyShowroomNotice">Explore one featured example at a time.</p>
+        <div class="showroom-heading"><h2 id="buddyShowroomTitle">Featured product</h2>
+          <label class="sr-only" for="buddyCategory">Explore a category</label><select id="buddyCategory"><option value="">Choose a category</option></select>
+          <p id="buddyShowroomNotice"></p>
         </div>
         <div id="buddyProductCards" class="showroom-products"></div>
         <section id="buddyProductDetail" class="showroom-detail" aria-label="Product details" hidden></section>

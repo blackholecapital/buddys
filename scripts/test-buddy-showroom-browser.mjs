@@ -52,6 +52,12 @@ try {
     await page.goto(origin+'/buddys/');
     await page.click('#instantShowroomButton');
     await page.getByText('Coming Soon',{exact:true}).waitFor();
+    assert.equal(await page.locator('.video-controls [data-buddy-mode]').count(),3);
+    assert.equal(await page.locator('#buddyConnectButton').isVisible(),false);
+    assert.ok(await page.locator('.buddy-reference-scene').evaluate(el=>getComputedStyle(el).backgroundImage.includes('buddy-showroom-reference.png')));
+    const header=await page.locator('.site-header').boundingBox();
+    const workspace=await page.locator('.video-room').boundingBox();
+    assert.ok(workspace.y>=header.y+header.height,'Workspace leaves the masthead visible');
     await page.click('[data-buddy-mode=message]');
     await page.waitForSelector('.showroom-product');
     assert.equal(await page.locator('.showroom-product').count(),1);
@@ -100,7 +106,7 @@ try {
     const selection=requests.find(r=>r.body.action==='product-selected');
     assert.equal(selection.body.productId,'dining-1');assert.equal(selection.body.catalogVersion,catalog.VERSION);
     assert.ok(requests.some(r=>r.body.event==='product.shown'));assert.ok(requests.some(r=>r.body.event==='product.opened'));
-    await page.click('#buddyConnectButton');
+    await page.click('[data-buddy-mode=video]');
     await page.waitForFunction(()=>document.getElementById('buddyConnectButton').textContent==='Try Video Again');
     await page.fill('#buddyChatInput','Keep helping me here');await page.locator('#buddyChatForm button').click();
     await page.waitForFunction(()=>!document.getElementById('buddyChatInput').disabled);

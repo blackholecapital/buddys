@@ -69,11 +69,11 @@
 
   function renderPlaceholder(message, detail = "Message now or connect on video when ready") {
     if(experienceMode === "showroom") {
-      mount.innerHTML = `<div class="showroom-preview"><span class="preview-label">VIRTUAL SHOWROOM PREVIEW</span><img class="preview-furniture" src="./images/showroom/sofa.svg" alt="Illustrated furniture showroom placeholder"><img class="preview-buddy" src="./images/buddy-avatar.jpg" alt="Buddy"><div class="preview-caption"><b id="buddyVideoStatus">Coming Soon</b><span>Buddy’s immersive showroom</span><p>Explore products and chat with Buddy today.</p></div></div>`;
+      mount.innerHTML = `<div class="showroom-preview"><div class="buddy-reference-scene" role="img" aria-label="Buddy standing beside a sectional in the showroom"></div><span class="preview-label">VIRTUAL SHOWROOM PREVIEW</span><div class="preview-caption"><b id="buddyVideoStatus">Coming Soon</b><span>Explore the collection with Buddy</span></div></div>`;
       return;
     }
     mount.innerHTML = `<div class="video-placeholder">
-      <img src="./images/buddy-avatar.jpg" alt="Buddy, your personal shopper">
+      <div class="buddy-reference-scene" role="img" aria-label="Buddy standing in the furniture showroom"></div>
       <b id="buddyVideoStatus"></b>
       <span></span>
     </div>`;
@@ -503,6 +503,12 @@
     finally { if (epoch === workspaceEpoch) chatPromise = null; }
   }
 
+  function updateWorkspaceHeader() {
+    const header = document.querySelector('.site-header');
+    if(header)document.documentElement.style.setProperty('--buddy-header-height', `${header.getBoundingClientRect().height}px`);
+  }
+  window.addEventListener('resize', updateWorkspaceHeader);
+
   function setExperience(mode) {
     experienceMode=mode;
     modal.dataset.experience=mode;
@@ -528,6 +534,8 @@
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    document.body.classList.add("buddy-workspace-open");
+    updateWorkspaceHeader();
     if (startVideo) {
       void enableVideo();
     } else {
@@ -812,6 +820,7 @@
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
+    document.body.classList.remove("buddy-workspace-open");
     renderPlaceholder("Ready to message Buddy");
     setChatState("Conversation saved — reopen to continue");
     setConnect("Connect on Video", false);

@@ -8,6 +8,7 @@ class Element {
   constructor() { this.dataset={}; this.children=[]; this.listeners={}; this.style={}; this.value=''; this.disabled=false; this.textContent=''; this.classes=new Set(); this.classList={add:x=>this.classes.add(x),remove:x=>this.classes.delete(x),contains:x=>this.classes.has(x)}; }
   addEventListener(name,fn) { this.listeners[name]=fn; }
   async emit(name,extra={}) { return this.listeners[name]?.({preventDefault(){},...extra}); }
+  getBoundingClientRect() { return {height:100}; }
   setAttribute() {}
   append(...nodes) { this.children.push(...nodes); }
   appendChild(node) { this.append(node); }
@@ -20,6 +21,7 @@ class Element {
 const ids=['buddyVideoTitle','instantShowroomButton','buddyVideoModal','buddyVideoMount','buddyConnectButton','buddyMicButton','instantMessageButton','instantVideoButton','closeVideoButton','buddyHangupButton','buddyChatForm','buddyChatInput','buddyChatStream','buddyChatState','buddyResourcePanel','buddyResourceList','buddyVideoStatus'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element()]));
 const document=new Element(); document.getElementById=id=>elements[id]; document.createElement=()=>new Element(); document.body=new Element();document.head=new Element();
+document.documentElement={style:{setProperty(){}}};
 const window=new Element(), storage=new Map(), requests=[];
 let failVideo=false,failText=false,failMic=false,pendingVideo=null, mediaLoads=0;
 const history=[];
