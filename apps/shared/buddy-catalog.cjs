@@ -5,7 +5,7 @@ const VERSION = 'buddy-showroom-v1';
 const rows = {
   'Living Room Furniture': [
     ['living-reclining-sofa','Power Reclining Sofa','A sofa option with powered reclining.','sofa',{'Style':'Power reclining'}],
-    ['living-sectional','Modular Sectional Sofa','A sectional option with a modular layout.','sectional',{'Style':'Modular sectional'}],
+    ['living-sectional','Harris 2-Piece Sectional','Room to relax, with a versatile design for your living space.','sectional',{'Pieces':'2','Style':'Sectional'}],
   ],
   'Bedroom Furniture': [
     ['bedroom-1','Crown Mark Elmer Queen Bedroom Set','Explore the Elmer queen bedroom set.','bed',{'Collection':'Elmer','Bed size':'Queen'}],
@@ -59,8 +59,8 @@ function categoryFor(interest = '') {
 function products(interest = '') {
   const category = categoryFor(interest);
   return (rows[category] || []).map(([id,name,description,illustration,specs],optionIndex) => ({
-    id,name,category,optionIndex,description,specs:Object.entries(specs).map(([label,value])=>({label,value})),
-    image:{src:`/buddys/images/showroom/${illustration}.svg`,alt:`${category} illustration; not a photograph of the offered model`,kind:'illustration'},
+    id,name,category,optionIndex,description,...(id==='living-sectional'?{features:['Spacious and comfortable','Durable, easy-care fabric','Reversible cushions','Modern, versatile design'],demoPrice:'$799.99'}:{}),specs:Object.entries(specs).map(([label,value])=>({label,value})),
+    image:id==='living-sectional'?{src:'/buddys/images/couch.PNG',alt:'Harris 2-Piece Sectional — supplied demo product image',kind:'product'}:{src:`/buddys/images/showroom/${illustration}.svg`,alt:`${category} illustration; not a photograph of the offered model`,kind:'illustration'},
     productUrl:null,price:null,availability:'Confirm model, finish, availability and agreement terms with your store.',
     catalogVersion:VERSION,
   }));

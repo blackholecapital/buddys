@@ -18,7 +18,7 @@ BUDDY_VIDEO_VOICE_PROVIDER = "livekit-inference"
 BUDDY_VIDEO_VOICE_MODEL = "xai/tts-1"
 BUDDY_VIDEO_VOICE_ID = "leo"
 BUDDY_RUNTIME_URL = "https://buddy-voice.xyz-labs.xyz"
-BUDDY_AVATAR_PROMPT = "Use friendly, attentive upper-body movement and natural hand gestures while speaking."
+BUDDY_AVATAR_PROMPT = "Keep a fixed wide waist-up camera matching the reference image. Show Buddy’s entire head, torso, both forearms, hands and the countertop throughout. No close-ups, face crop or camera zoom. Use friendly expressions and subtle natural hand gestures."
 
 [[d1_databases]]
 binding = "DB"

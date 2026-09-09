@@ -508,6 +508,11 @@
     if(header)document.documentElement.style.setProperty('--buddy-header-height', `${header.getBoundingClientRect().height}px`);
   }
   window.addEventListener('resize', updateWorkspaceHeader);
+  window.addEventListener('buddy:help-requested', event => {
+    if(chatInput.disabled)return;
+    chatInput.value=String(event.detail?.question || '').slice(0,1200);
+    chatInput.focus();
+  });
 
   function setExperience(mode) {
     experienceMode=mode;

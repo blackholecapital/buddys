@@ -112,7 +112,12 @@ try {
     for (const product of products) {
       assert.ok(!productIds.has(product.id));productIds.add(product.id);
       assert.equal(product.price,null);assert.equal(product.productUrl,null);
-      assert.match(readFileSync(new URL('../apps/frontend/public'+product.image.src,import.meta.url),'utf8'),/<svg/);
+      const asset=readFileSync(new URL('../apps/frontend/public'+product.image.src,import.meta.url));
+      if(product.image.kind==='product'){
+        assert.equal(product.image.src,'/buddys/images/couch.PNG');
+        assert.equal(asset.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+        assert.equal(product.features.length,4);
+      } else assert.match(asset.toString('utf8'),/<svg/);
     }
   }
   assert.equal(catalog.products('Financing Questions').length,0,'Support interests must not invent sellable products');
