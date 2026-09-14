@@ -13,8 +13,8 @@
   }
   function image(product) {
     const img=node('img');
-    // Accept only the exact uploaded couch asset or repository-owned illustrations.
-    img.src=product.image?.src==='/buddys/images/couch.PNG'?product.image.src:/^\/buddys\/images\/showroom\/[a-z-]+\.svg$/.test(product.image?.src || '')?product.image.src:'/buddys/images/showroom/sofa.svg';
+    // Accept only the exact uploaded couch asset or repository-owned demo visuals.
+    img.src=product.image?.src==='/buddys/images/couch.PNG'?product.image.src:/^\/buddys\/images\/showroom\/[a-z0-9-]+\.(?:svg|png|webp)$/.test(product.image?.src || '')?product.image.src:'/buddys/images/showroom/sofa.svg';
     img.alt=product.image?.alt || 'Product category illustration';
     img.width=480;img.height=300;
     return img;
@@ -49,7 +49,8 @@
       }catch{}
     }
     if(!state.locked)controls.append(select(product,index));
-    detail.append(back,image(product),node('span',product.image?.kind==='product'?'Demo product image':'Category illustration · exact appearance varies','showroom-caption'),title,
+    detail.append(back,image(product),node('span',product.image?.kind==='product'?'Demo product image':'Demo product visual · model appearance varies','showroom-caption'),title,
+      product.demoPrice?node('div',product.demoPrice+' · demo weekly estimate','showroom-price'):node('span'),
       node('p',product.description),specs,node('p',product.availability,'showroom-availability'),
       node('p','Dimensions, finish, pricing and payment terms: confirm with your store.','showroom-availability'),controls);
     cards.hidden=true;
@@ -68,30 +69,32 @@
     cards.replaceChildren();cards.hidden=false;detail.replaceChildren();detail.hidden=true;openedId='';
     if(!next.products?.length)cards.append(node('p','Choose a category to explore two demo options.','showroom-empty'));
     const products=next.products || [];
+    const gallery=panel.closest('[data-format="showroom"]');
     const featured=products.find(p=>p.name===next.selectedProduct)||products.find(p=>p.id===featuredId)||products.find(p=>p.id==='living-sectional')||products[0];
     featuredId=featured?.id || '';
     for(const [index,product] of products.entries()){
-      if(product.id!==featuredId)continue;
-      const card=node('article',null,'showroom-product');card.dataset.productId=product.id;
+      if(!gallery&&product.id!==featuredId)continue;
+      const card=node('article',null,'showroom-product');card.dataset.productId=product.id;card.dataset.option=String(index);
       const badge=node('span',next.selectedProduct===product.name?'YOUR SELECTION':`OPTION ${index+1}`,'showroom-option');
       card.append(image(product),badge,node('h3',product.name));
-      if(product.demoPrice){const price=node('div',product.demoPrice,'showroom-price');price.append(node('small','Demo price · confirm with your store'));card.append(price);}
+      if(product.demoPrice){const price=node('div',product.demoPrice,'showroom-price');price.append(node('small','Demo weekly estimate · confirm with your store'));card.append(price);}
       const features=node('ul',null,'showroom-features');
       for(const feature of product.features || (product.specs || []).map(spec=>spec.label+': '+spec.value))features.append(node('li',feature));
-      card.append(features,node('span',product.image?.kind==='product'?'Demo product · confirm model and terms':'Illustration · confirm model and terms','showroom-caption'),button('View details',()=>open(product,index)));
+      card.append(features,node('span',product.image?.kind==='product'?'Demo product · confirm model and terms':'Demo visual · exact model may vary','showroom-caption'),button('View details',()=>open(product,index)));
       if(!next.locked)card.append(select(product,index));
-      if(products.length>1&&!next.locked)card.append(button('See another example',()=>{const nextProduct=products[(index+1)%products.length];featuredId=nextProduct.id;render(state,callbacks);callbacks.onPresent?.(nextProduct);}));
+      if(!gallery&&products.length>1&&!next.locked)card.append(button('See another example',()=>{const nextProduct=products[(index+1)%products.length];featuredId=nextProduct.id;render(state,callbacks);callbacks.onPresent?.(nextProduct);}));
       cards.append(card);
+      callbacks.onEvent?.('product.shown',product);
+      if(gallery&&index<products.length-1)continue;
       const help=node('section',null,'showroom-quick-help');help.append(node('h3','Quick Help'));
       for(const [icon,label,question] of [['♧','Delivery Information','How does delivery work for '+product.name+'?'],['▤','Financing Options','What payment options are available for '+product.name+'?'],['?','Ask Another Question','I have another question about '+product.name+'.']]){
         const b=button(icon+'  '+label,()=>window.dispatchEvent(new CustomEvent('buddy:help-requested',{detail:{question}})));help.append(b);
       }
       const store=node('a','⌖  Find a Store Near You');store.href='https://www.buddyrents.com/store-locator';store.target='_blank';store.rel='noopener noreferrer';help.append(store);cards.append(help);
-      callbacks.onEvent?.('product.shown',product);
     }
   }
   categorySelect.addEventListener('change',()=>{if(categorySelect.value)callbacks.onCategory?.(categorySelect.value);});
-  window.BuddyShowroom={render,context(){return panel.getClientRects().length ? {category:state.category,productId:featuredId} : undefined;},followMessage(text){
+  window.BuddyShowroom={render,refresh(){render(state,callbacks);},context(){return panel.getClientRects().length ? {category:state.category,productId:featuredId} : undefined;},followMessage(text){
     if(state.locked||state.busy)return;
     const normalized=String(text||'').toLowerCase();
     const product=state.products?.find(p=>normalized.includes(p.name.toLowerCase()));
