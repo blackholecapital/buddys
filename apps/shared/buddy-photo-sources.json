@@ -1,0 +1,121 @@
+{
+  "appliance-french-door": {
+    "src": "/buddys/images/showroom/appliance-french-door.jpg",
+    "sourceUrl": "https://www.lowes.com/pl/refrigerators/french-door-refrigerators/lg/stainless-steel/4294857963-4294801527-4294796421",
+    "sourceImage": "https://mobileimages.lowes.com/productimages/2e34fdc3-d2cd-43f6-b259-9b9275451acc/68505319.jpeg",
+    "kind": "representative-photo",
+    "alt": "Representative appliance french door photograph — exact demo model may differ"
+  },
+  "appliance-laundry-pair": {
+    "src": "/buddys/images/showroom/appliance-laundry-pair.jpg",
+    "sourceUrl": "https://www.kernhill.ca/products/ge-laundry-gfw550smnww-gfd55esmnww",
+    "sourceImage": "https://www.kernhill.ca/cdn/shop/files/24680_1_1200x.jpg?v=1714039295",
+    "kind": "representative-photo",
+    "alt": "Representative appliance laundry pair photograph — exact demo model may differ"
+  },
+  "bedroom-1": {
+    "src": "/buddys/images/showroom/bedroom-1.jpg",
+    "sourceUrl": "https://kassamall.com/ella-mae-bedroom-set-in-gray/",
+    "sourceImage": "https://cdn11.bigcommerce.com/s-jmv3iiy9ec/images/stencil/1280x1280/products/352445/746299/B6840__62291.1709186815.jpg?c=1",
+    "kind": "representative-photo",
+    "alt": "Representative bedroom collection photograph — exact demo model may differ"
+  },
+  "bedroom-2": {
+    "src": "/buddys/images/showroom/bedroom-2.jpg",
+    "sourceUrl": "https://evefurn.com/products/patterson-driftwood-dresser-by-crown-mark-evefurniture",
+    "sourceImage": "https://evefurn.com/cdn/shop/files/patterson-driftwood-dresser-crown-mark-evefurniture-2.webp?v=1767911106&width=1214",
+    "kind": "representative-photo",
+    "alt": "Representative bedroom collection photograph — exact demo model may differ"
+  },
+  "computer-all-in-one": {
+    "src": "/buddys/images/showroom/computer-all-in-one.jpg",
+    "sourceUrl": "https://grandtechintlonline.com/products/all-in-one-pc/thomson-aio-range-27-all-in-one-pc/",
+    "sourceImage": "https://grandtechintlonline.com/images/products/images/aio%20range%2027.jpg",
+    "kind": "representative-photo",
+    "alt": "Representative computer all in one photograph — exact demo model may differ"
+  },
+  "computer-gaming-laptop": {
+    "src": "/buddys/images/showroom/computer-gaming-laptop.webp",
+    "sourceUrl": "https://rozetka.com.ua/ua/notebooks-dream-machines-153798886/p554250972/",
+    "sourceImage": "https://content2.rozetka.com.ua/goods/images/big/612690053.jpg",
+    "kind": "representative-photo",
+    "alt": "Representative computer gaming laptop photograph — exact demo model may differ"
+  },
+  "dining-1": {
+    "src": "/buddys/images/showroom/dining-1.jpg",
+    "sourceUrl": "https://www.lowes.com/pd/Fenbeli-Five-Piece-Wood-Dining-Table-Set-for-Kitchen-and-Dining-Room-with-Chairs/7979918",
+    "sourceImage": "https://mobileimages.lowes.com/productimages/68a280c9-b5c0-4b33-88d0-6d4ac1d5cba9/76663960.jpeg",
+    "kind": "representative-photo",
+    "alt": "Representative five-piece dining set photograph — exact demo model may differ"
+  },
+  "dining-2": {
+    "src": "/buddys/images/showroom/dining-2.jpg",
+    "sourceUrl": "https://www.teppermans.com/product-otto-5-piece-dining-set-t-1526-5pc-k",
+    "sourceImage": "https://www.teppermans.com/site/img/ItemPictures/ItemPictures/T-1526-5PC-K_01.jpg?resizeh=600&resizeid=3&resizew=600",
+    "kind": "representative-photo",
+    "alt": "Representative five-piece dining set photograph — exact demo model may differ"
+  },
+  "gaming-1": {
+    "src": "/buddys/images/showroom/gaming-1.png",
+    "sourceUrl": "https://alabamart.com/products/sony-ps5-825gb-ssd-hdr-playstation-5-console-standard-edition",
+    "sourceImage": "https://alabamart.com/cdn/shop/files/PS53.png?v=1699517502&width=1445",
+    "kind": "representative-photo",
+    "alt": "Representative gaming 1 photograph — exact demo model may differ"
+  },
+  "gaming-2": {
+    "src": "/buddys/images/showroom/gaming-2.jpg",
+    "sourceUrl": "https://www.hipercor.es/videojuegos/A37047078-consola-xbox-series-x/",
+    "sourceImage": "https://cdn.grupoelcorteingles.es/SGFM/dctm/MEDIA03/202009/21/00194482000018____5__1200x1200.jpg?height=1200&impolicy=Resize&width=1200",
+    "kind": "representative-photo",
+    "alt": "Representative gaming 2 photograph — exact demo model may differ"
+  },
+  "living-reclining-sofa": {
+    "src": "/buddys/images/showroom/living-reclining-sofa.jpg",
+    "sourceUrl": "https://www.gardner-white.com/product/179425-virgo-slate-dual-power-reclining-sofa",
+    "sourceImage": "https://d3c36halvcc4ph.cloudfront.net/275313_1200x800.jpg",
+    "kind": "representative-photo",
+    "alt": "Representative living reclining sofa photograph — exact demo model may differ"
+  },
+  "mattress-hybrid-queen": {
+    "src": "/buddys/images/showroom/mattress-hybrid-queen.jpg",
+    "sourceUrl": "https://www.thestreet.com/deals/ayeawo-hybrid-mattress-queen-size-amazon-sale",
+    "sourceImage": "https://www.thestreet.com/.image/MjE3Nzk5OTMwMjA1NDQ4MDI4/ayeawo-queen-size-hybrid-mattress.jpg?profile=w2560&x=50&y=50",
+    "kind": "representative-photo",
+    "alt": "Representative mattress hybrid queen photograph — exact demo model may differ"
+  },
+  "mattress-memory-queen": {
+    "src": "/buddys/images/showroom/mattress-memory-queen.jpg",
+    "sourceUrl": "https://www.shopabunda.com/products/fathom-medium-queen-mattress-10-inch-memory-foam-mattress-queen-size-bed-in-a-box-for-back-pain-relief-and-cool-sleep-with-gel-foam-and-removeable-fiberglass-free-cover-certipur-us-certified",
+    "sourceImage": "https://m.media-amazon.com/images/I/81nC9mB07fL._AC_US1400_.jpg",
+    "kind": "representative-photo",
+    "alt": "Representative mattress memory queen photograph — exact demo model may differ"
+  },
+  "smartphone-galaxy-s25-ultra": {
+    "src": "/buddys/images/showroom/smartphone-galaxy-s25-ultra.jpg",
+    "sourceUrl": "https://www.mobileciti.com.au/samsung-galaxy-s25-ultra-256gb-titanium-black",
+    "sourceImage": "https://www.mobileciti.com.au/media/catalog/product/s/a/samsung-galaxy-s25-ultra-256gb-titanium-black-5.jpg?image-type=image&store=mobileciti",
+    "kind": "representative-photo",
+    "alt": "Representative smartphone galaxy s25 ultra photograph — exact demo model may differ"
+  },
+  "smartphone-iphone-16-pro": {
+    "src": "/buddys/images/showroom/smartphone-iphone-16-pro.webp",
+    "sourceUrl": "https://www.ryans.com/apple-iphone-16-pro-256gb-natural-titanium",
+    "sourceImage": "https://www.ryans.com/storage/products/main/apple-iphone-16-pro-256gb-natural-21748775120.webp",
+    "kind": "representative-photo",
+    "alt": "Representative smartphone iphone 16 pro photograph — exact demo model may differ"
+  },
+  "tv-65-oled": {
+    "src": "/buddys/images/showroom/tv-65-oled.jpg",
+    "sourceUrl": "https://eliraqi.com.eg/en/lg-oled-tv-65-inch-cinema-screen-design-4k-cinema-hdr-webos-smart-ai-thinq-pixel-dimming-model-oled65a1pva",
+    "sourceImage": "https://eliraqi.com.eg/images/thumbs/0018697_lg-oled-tv-65-inch-cinema-screen-design-4k-cinema-hdr-webos-smart-ai-thinq-pixel-dimming-model-oled6_600.jpeg",
+    "kind": "representative-photo",
+    "alt": "Representative tv 65 oled photograph — exact demo model may differ"
+  },
+  "tv-75-qled": {
+    "src": "/buddys/images/showroom/tv-75-qled.jpg",
+    "sourceUrl": "https://www.electronicamegatonesrl.com/smart-qled-tv-samsung-75--pulgadas-4k-uhd-qn75q7faagczb-156324/p",
+    "sourceImage": "https://megatonedigital.vteximg.com.br/arquivos/ids/205512-1000-1000/156324_01.jpg?v=638966736225570000",
+    "kind": "representative-photo",
+    "alt": "Representative tv 75 qled photograph — exact demo model may differ"
+  }
+}

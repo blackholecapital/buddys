@@ -1,4 +1,6 @@
 /* Buddy-owned premium surfaces. Shared runtime and tenant wiring stay independent. */
+.premium-intro[hidden]{display:none!important}
+main{padding-top:16px}
 body{background:radial-gradient(ellipse at 85% 20%,#e2ecff,transparent 60%),#f3f6fc;color:#142b50}
 .header-inner{width:min(1540px,calc(100% - 48px));min-height:78px}.logo-link img{width:170px}.site-header{border-bottom-width:4px}.site-header nav{font-size:12px}
 .premium-intro{width:min(1540px,calc(100% - 48px));margin:30px auto 24px;display:flex;justify-content:space-between;align-items:center;gap:24px;text-align:left}
@@ -122,6 +124,22 @@ body{background:radial-gradient(ellipse at 85% 20%,#e2ecff,transparent 60%),#f3f
 .premium-workspace .video-placeholder>b{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .premium-workspace[data-format=mobile]{height:min(820px,calc(100dvh - 24px))}
 .premium-workspace[data-format=mobile] .video-room{height:100%;overflow-y:auto;overscroll-behavior:contain}
+.premium-workspace,.premium-workspace *,.premium-formats,#premiumDialog{scrollbar-width:none}
+.premium-workspace::-webkit-scrollbar,.premium-workspace *::-webkit-scrollbar,.premium-formats::-webkit-scrollbar,#premiumDialog::-webkit-scrollbar{display:none}
+.premium-workspace .video-controls{border:0;background:transparent;box-shadow:none;backdrop-filter:none;gap:4px;padding:0}
+.premium-workspace .video-controls .buddy-mode-tabs button,.premium-workspace .video-controls .round-control{border:1px solid #ffffff24;background:#14274028;color:#fff;border-radius:8px;backdrop-filter:blur(10px);box-shadow:none}
+.premium-workspace .video-controls .buddy-mode-tabs button[aria-pressed=true]{background:#e4edff30;color:#fff;box-shadow:inset 0 0 0 1px #ffffff24}
+.premium-workspace .video-controls button:hover{background:#e4edff50}
+.premium-workspace .video-controls #buddyMicButton:disabled{display:none}
+.premium-eila-mark,.premium-ready{background:none;border:0;box-shadow:none;backdrop-filter:none;text-shadow:0 1px 5px #05162e}
+.premium-eila-mark{padding:0;gap:4px;bottom:15px}.premium-eila-mark svg{width:20px;height:20px;color:#c6edff}.premium-eila-mark b{font-weight:400;letter-spacing:3px}.premium-eila-mark i{font-size:7px;letter-spacing:1px;color:#80d9ff}
+.premium-ready{padding:3px;top:12px;right:12px;letter-spacing:.6px}.premium-ready i{box-shadow:0 0 8px #52e49a}
+.premium-workspace[data-format=popup] .premium-ready{right:48px}
+.premium-workspace .buddy-chat-form{position:relative;display:block;padding:5px 10px 9px}
+.premium-workspace .buddy-chat-form input{width:100%;padding-right:43px;height:38px;min-height:38px}
+.premium-workspace .buddy-chat-form button{position:absolute;right:16px;top:10px;width:28px;height:28px;min-width:28px;min-height:28px;margin:0;padding:5px;border:0;border-radius:50%;background:#2556a0;box-shadow:none;display:grid;place-items:center}
+.premium-workspace .buddy-chat-form button svg{display:block;width:18px;height:18px}
+.premium-workspace .buddy-bubble:not(.system):not(.user)::before{background-size:185%;background-position:50% 18%;background-color:#c6a888}
 @media(max-width:1100px) and (min-width:761px){
   .premium-workspace[data-format=showroom] .buddy-live-workspace{grid-template-columns:minmax(300px,.85fr) minmax(0,1.15fr);height:auto;min-height:700px}
   .premium-workspace[data-format=showroom] .buddy-showroom{grid-column:1/-1;max-height:none;border-left:0;border-top:1px solid #dae4f5}
