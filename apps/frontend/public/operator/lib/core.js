@@ -184,6 +184,7 @@ const NAV = [
     { id:"rate-limits", label:"Rate Limits", icon:"\u25C7" },
     { id:"buddys-demo", label:"Buddy's Demo", icon:"\u2605", href:"/buddys/#contact-form" },
     { id:"buddys-crm", label:"Buddy's CRM", icon:"\u2605", href:"/buddy-dashboard" },
+    { id:"bb-demo", label:"BB Demo", icon:"\u2605", href:"/bb-demo/" },
   ]},
 ];
 
