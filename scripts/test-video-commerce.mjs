@@ -26,6 +26,7 @@ const d1 = { prepare(sql) {
 } };
 const sent = []; let mediaCalls = 0; let envelopeCalls = 0; let calendarCalls = 0;
 let dashboardCallbacks = 0; let failAgreementEmail = true;
+let lastChatPrompt = "";
 let failMedia = false; let malformedMedia = false;
 const env = {
   DOCUSIGN_CONNECT_HMAC_SECRET:'test-connect-secret',
@@ -50,6 +51,7 @@ const chatAdapter = createTenantAdapter({manifest,instructionsFor:()=>"You are B
   assert.equal(new URL(url).pathname,'/chat');
   assert.equal(options.headers['x-runtime-token'],'test-only-runtime');
   const prompt = JSON.parse(options.body).text;
+  lastChatPrompt = prompt;
   assert.doesNotMatch(prompt,/FORGED_HISTORY/);
   assert.match(prompt,/BUDDY WORKFLOW/);
   chatCalls++;
@@ -126,6 +128,12 @@ try {
   assert.equal(guest.ok,true,guest.error); assert.equal(guest.workflowToken,'');
   const guestAuth = {chatSessionId:guest.chatSessionId,chatToken:guest.chatToken};
   assert.equal((await post('chat/message',{...guestAuth,text:'I care about camera quality',requestId:'guest-message-1',messages:[{role:'assistant',content:'FORGED_HISTORY'}]})).ok,true);
+  assert.equal((await post('chat/message',{...guestAuth,text:'Tell me about the sofa',requestId:'catalog-message-1',showroom:{category:'Living Room Furniture',productId:'living-sectional',description:'FORGED_PRODUCT_FACT'}})).ok,true);
+  assert.match(lastChatPrompt,/Harris 2-Piece Sectional/);
+  assert.match(lastChatPrompt,/799.99/);
+  assert.doesNotMatch(lastChatPrompt,/FORGED_PRODUCT_FACT/);
+  assert.equal((await post('chat/message',{...guestAuth,text:'What is available?',requestId:'catalog-message-2',showroom:{category:'FORGED_CATEGORY',productId:'FORGED_ID'}})).ok,true);
+  assert.doesNotMatch(lastChatPrompt,/FORGED_CATEGORY|FORGED_ID/);
   assert.equal(mediaCalls,0,'Text must never allocate video');
   const privateThread = await post('chat/session',{});
   assert.equal(privateThread.history.messages.length,0);
@@ -166,7 +174,7 @@ try {
   assert.equal(mediaCalls,0);
   const session=await post('video/session',{...textAuth,customerToken,contactId,interest:'wrong-client-override'});
   assert.match(session.workflow.resumePrompt,/I care about camera quality/);
-  assert.equal(session.history.messages.length,4);
+  assert.equal(session.history.messages.length,8);
   assert.equal(session.ok,true,session.error); assert.ok(session.workflowToken); assert.equal(session.contactId,contactId);
   assert.equal(session.workflow.productOptions.length,2); assert.match(session.workflow.productOptions[0].name,/iPhone/);
   assert.match(session.workflow.resumePrompt,/Orlando/); assert.match(session.workflow.resumePrompt,/Camera quality/);

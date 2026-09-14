@@ -55,6 +55,7 @@
     cards.hidden=true;
     title.focus();
     callbacks.onEvent?.('product.opened',product);
+    callbacks.onPresent?.(product);
   }
   function render(next,handlers) {
     state=next;callbacks=handlers;panel.hidden=false;
@@ -79,7 +80,7 @@
       for(const feature of product.features || (product.specs || []).map(spec=>spec.label+': '+spec.value))features.append(node('li',feature));
       card.append(features,node('span',product.image?.kind==='product'?'Demo product · confirm model and terms':'Illustration · confirm model and terms','showroom-caption'),button('View details',()=>open(product,index)));
       if(!next.locked)card.append(select(product,index));
-      if(products.length>1&&!next.locked)card.append(button('See another example',()=>{featuredId=products[(index+1)%products.length].id;render(state,callbacks);}));
+      if(products.length>1&&!next.locked)card.append(button('See another example',()=>{const nextProduct=products[(index+1)%products.length];featuredId=nextProduct.id;render(state,callbacks);callbacks.onPresent?.(nextProduct);}));
       cards.append(card);
       const help=node('section',null,'showroom-quick-help');help.append(node('h3','Quick Help'));
       for(const [icon,label,question] of [['♧','Delivery Information','How does delivery work for '+product.name+'?'],['▤','Financing Options','What payment options are available for '+product.name+'?'],['?','Ask Another Question','I have another question about '+product.name+'.']]){
@@ -90,7 +91,7 @@
     }
   }
   categorySelect.addEventListener('change',()=>{if(categorySelect.value)callbacks.onCategory?.(categorySelect.value);});
-  window.BuddyShowroom={render,followMessage(text){
+  window.BuddyShowroom={render,context(){return panel.getClientRects().length ? {category:state.category,productId:featuredId} : undefined;},followMessage(text){
     if(state.locked||state.busy)return;
     const normalized=String(text||'').toLowerCase();
     const product=state.products?.find(p=>normalized.includes(p.name.toLowerCase()));

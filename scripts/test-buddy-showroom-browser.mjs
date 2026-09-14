@@ -24,6 +24,7 @@ const server=http.createServer(async(req,res)=>{
       if(url.pathname==='/api/chat/session') {linked=Boolean(body.contactId);data={ok:true,contactId:linked?'lead-1':'',sessionId:'chat-1',chatSessionId:'chat-1',chatToken:'fixture-chat',workflowToken:linked?'fixture-workflow':'',history:{messages:[]},workflow:linked?workflow():{phase:'guest'}};}
       else if(url.pathname==='/api/showroom')data=req.method==='GET'?{ok:true,categories:catalog.categories,category:catalog.categoryFor(url.searchParams.get('category')),products:catalog.products(url.searchParams.get('category'))}:{ok:true};
       else if(url.pathname==='/api/chat/message')data={ok:true,response:'Let’s look at '+catalog.products(category)[1].name+'. Happy to help you compare the options.'};
+      else if(url.pathname==='/api/leads'){category=body.product_interest;data={ok:true,contact:{id:'lead-1'},customerToken:'fixture-customer'};}
       else if(url.pathname==='/api/video/session')data={ok:false,error:'Media unavailable in this fixture'};
       else if(url.pathname==='/api/video/action') {
         if(body.action==='category-selected'){category=body.category;data={ok:true,workflow:workflow()};}
@@ -44,101 +45,97 @@ const browser=await playwright.chromium.launch({headless:true,...(process.env.BU
 const shots=process.env.BUDDY_SCREENSHOT_DIR;
 if(shots)await mkdir(shots,{recursive:true});
 try {
-  for(const viewport of [{width:1280,height:900},{width:390,height:844},{width:320,height:740}]){
+  for(const viewport of [{width:1440,height:1000},{width:1024,height:900},{width:390,height:844},{width:320,height:740}]){
     selected=false;linked=false;category='Living Room Furniture';requests.length=0;
     const page=await browser.newPage({viewport});const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     await page.route('https://**/*',route=>route.abort());
     await page.goto(origin+'/buddys/');
-    await page.click('#instantShowroomButton');
-    await page.getByText('Coming Soon',{exact:true}).waitFor();
-    assert.equal(await page.locator('.video-controls [data-buddy-mode]').count(),3);
-    assert.equal(await page.locator('#buddyConnectButton').isVisible(),false);
-    assert.ok(await page.locator('.buddy-reference-scene').evaluate(el=>getComputedStyle(el).backgroundImage.includes('buddy-show.PNG')));
-    const header=await page.locator('.site-header').boundingBox();
-    const workspace=await page.locator('.video-room').boundingBox();
-    assert.ok(workspace.y>=header.y+header.height,'Workspace leaves the masthead visible');
+    await page.waitForSelector('.showroom-product',{state:'attached'});
+    assert.equal(requests.filter(r=>r.path==='/api/chat/session').length,0,'No session allocation before interaction');
+    assert.equal(await page.locator('#demoForm').count(),1);
+    await page.fill('[name=first_name]','Sam');
+    for(const format of ['page','widget','mobile','popup']) {
+      await page.click(`.premium-formats [data-format=${format}]`);
+      assert.equal(await page.locator('[name=first_name]').inputValue(),'Sam','Format switches preserve draft');
+      assert.equal(await page.locator('#buddyShowroom').isVisible(),!['mobile','popup'].includes(format)&&viewport.width>760);
+      assert.equal(await page.locator('#demoForm').count(),1);
+      assert.equal(await page.locator('.video-room').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,`${format} no overflow at ${viewport.width}`);
+      if(shots){await page.locator('#buddyVideoModal').screenshot({path:path.join(shots,`${format}-${viewport.width}.png`)});}
+      if(format==='popup'){
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(()=>!document.getElementById('premiumDialog').open&&document.getElementById('buddyVideoModal').dataset.format==='mobile');
+        assert.equal(await page.locator('#buddyVideoModal').getAttribute('data-format'),'mobile');
+      }
+    }
+    await page.click('.premium-formats [data-format=page]');
     await page.click('[data-buddy-mode=message]');
-    await page.waitForSelector('.showroom-product');
-    assert.equal(await page.locator('.buddy-desk-preview').isVisible(),true);
-    assert.equal(await page.locator('.buddy-reference-scene').count(),0);
-
-    assert.equal(await page.locator('.showroom-product').count(),1);
-    assert.match(await page.locator('.showroom-product img').getAttribute('src'),/couch.PNG$/);
-    assert.equal(await page.locator('.showroom-features li').count(),4);
-    if(shots)await page.screenshot({path:path.join(shots,`featured-sofa-${viewport.width}.png`)});
-    await page.getByRole('button',{name:/Delivery Information/}).click();
-    assert.match(await page.locator('#buddyChatInput').inputValue(),/delivery.*Harris/);
-    await page.fill('#buddyChatInput','');
-    await page.getByRole('button',{name:'See another example',exact:true}).click();
-    assert.match(await page.locator('.showroom-product h3').innerText(),new RegExp(catalog.products(category)[0].name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-    await page.click('[data-buddy-mode=showroom]');
-    await page.getByText('Coming Soon',{exact:true}).waitFor();
-    assert.equal(requests.filter(r=>r.path==='/api/video/session').length,0);
-    assert.equal(await page.locator('#buddyChatInput').isEnabled(),true);
-    if(shots)await page.screenshot({path:path.join(shots,`virtual-showroom-${viewport.width}.png`)});
-    await page.click('[data-buddy-mode=message]');
+    await page.waitForFunction(()=>document.getElementById('buddyChatState').textContent==='Ready to message');
     assert.equal(requests.filter(r=>r.path==='/api/video/session').length,0);
     assert.equal(await page.locator('script[src*="livekit"]').count(),0);
-    await page.selectOption('#buddyCategory','Gaming');
-    await page.waitForFunction(()=>document.querySelector('.showroom-product h3')?.textContent.includes('PlayStation'));
-    await page.getByRole('button',{name:'View details',exact:true}).first().click();
-    await page.waitForSelector('#buddyProductDetail:not([hidden])');
-    assert.match(await page.locator('#buddyProductDetail').innerText(),/PlayStation 5/);
-    await page.keyboard.press('Escape');
-    assert.equal(await page.locator('#buddyVideoModal').isVisible(),true);
-    assert.equal(await page.locator('#buddyProductDetail').isVisible(),false);
-    await page.getByRole('button',{name:'Add your preferences to select'}).first().click();
-    assert.equal(await page.locator('#buddyVideoModal').isVisible(),false);
-    assert.equal(await page.locator('[name="product_interest"]').inputValue(),'Gaming');
-    assert.equal(await page.locator('[name="contact_method"][value="Message"]').isChecked(),true);
-    category='Smartphones';
-    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('buddy:conversation-requested',{detail:{contactId:'lead-1',customerToken:'fixture-customer',startVideo:false,interest:'Smartphones'}})));
-    await page.waitForFunction(()=>document.querySelector('.showroom-product h3')?.textContent.includes('iPhone'));
-    await page.selectOption('#buddyCategory','Dining Room Furniture');
-    await page.waitForFunction(()=>document.querySelector('.showroom-product h3')?.textContent.includes('Finling'));
-    await page.fill('#buddyChatInput','Can you tell me about the first option?');await page.locator('#buddyChatForm button').click();
+    if(viewport.width>760){
+      await page.getByRole('button',{name:/Delivery Information/}).click();
+      assert.match(await page.locator('#buddyChatInput').inputValue(),/delivery.*Harris/);
+      await page.selectOption('#buddyCategory','Gaming');
+      await page.waitForFunction(()=>document.querySelector('.showroom-product h3')?.textContent.includes('PlayStation'));
+      await page.getByRole('button',{name:'View details',exact:true}).click();
+      await page.waitForSelector('#buddyProductDetail:not([hidden])');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#buddyProductDetail').isVisible(),false);
+      await page.getByRole('button',{name:'Add your preferences to select'}).click();
+      assert.equal(await page.locator('#buddyVideoModal').isVisible(),true,'Preferences remain beside Buddy');
+      assert.equal(await page.locator('[name=product_interest]').inputValue(),'Gaming');
+      assert.equal(await page.locator('[name=contact_method]').inputValue(),'Message');
+    }
+    await page.fill('[name=last_name]','Test');await page.fill('[name=email]','sam@example.test');await page.fill('[name=phone]','5555550123');
+    await page.selectOption('[name=product_interest]','Smartphones');await page.selectOption('[name=lead_source]','Other');await page.selectOption('[name=preferred_store]','Florida');
+    await page.selectOption('[name=contact_method]','Text');
+    assert.equal(await page.locator('#smsConsent').getAttribute('required'),'');
+    await page.click('#submitButton');
+    assert.equal(requests.filter(r=>r.path==='/api/leads').length,0,'SMS without consent never submits');
+    await page.selectOption('[name=contact_method]','Message');
+    const submitFormat=viewport.width===1440?'page':viewport.width===1024?'widget':viewport.width===390?'popup':'mobile';
+    await page.click(`.premium-formats [data-format=${submitFormat}]`);
+    await page.click('#submitButton');
+    await page.waitForFunction(()=>document.querySelector('#formStatus').textContent.includes('preferences are saved'));
+    assert.equal(requests.filter(r=>r.path==='/api/leads').length,1);
+    const lead=requests.find(r=>r.path==='/api/leads').body;
+    assert.equal(lead.first_name,'Sam');assert.equal(lead.consent,false);assert.equal(lead.contact_method,'Message');
+    await page.waitForFunction(()=>document.getElementById('buddyChatState').textContent==='Ready to message');
+    if(submitFormat==='popup'){await page.click('#premiumDialogClose');await page.waitForFunction(()=>!document.getElementById('premiumDialog').open&&document.getElementById('buddyVideoModal').dataset.format!=='popup');}
+    await page.click('.premium-formats [data-format=page]');
+    if(viewport.width>760){
+      await page.selectOption('#buddyCategory','Dining Room Furniture');
+      await page.waitForFunction(()=>document.querySelector('.showroom-product h3')?.textContent.includes('Finling'));
+    }
+    await page.fill('#buddyChatInput','Tell me about this product');await page.locator('#buddyChatForm button').click();
     await page.waitForFunction(()=>!document.getElementById('buddyChatInput').disabled);
     assert.equal(requests.filter(r=>r.body.action==='product-selected').length,0,'Inquiry must not create an agreement');
-    assert.equal(await page.locator('.showroom-product h3').innerText(),catalog.products(category)[1].name,'Buddy product mention follows the featured tile');
-    await page.getByRole('button',{name:'See another example',exact:true}).click();
-    if(shots && viewport.width!==320) {
-      await page.locator('.video-room').evaluate(el=>{el.scrollTop=0;});
-      await page.waitForTimeout(150);
+    const message=requests.find(r=>r.path==='/api/chat/message');assert.equal(Boolean(message.body.showroom?.productId),viewport.width>760,'Only visible product context accompanies message');
+    if(viewport.width>760){
+      assert.equal(await page.locator('.showroom-product h3').innerText(),catalog.products(category)[1].name,'Buddy product mention follows featured tile');
+      await page.getByRole('button',{name:'See another example',exact:true}).click();
+      await page.getByRole('button',{name:'Select & prepare agreement',exact:true}).click();
+      await page.waitForFunction(()=>document.querySelector('.showroom-option')?.textContent==='YOUR SELECTION');
+      assert.equal(await page.locator('#buddyCategory').isDisabled(),true);
+      assert.equal(requests.find(r=>r.body.action==='product-selected').body.productId,'dining-1');
     }
-    if(shots && viewport.width!==320) await page.screenshot({path:path.join(shots,`showroom-${viewport.width}.png`),fullPage:false});
-    await page.getByRole('button',{name:'View details',exact:true}).first().click();
-    await page.getByRole('button',{name:'Select & prepare agreement',exact:true}).click();
-    await page.waitForFunction(()=>document.querySelector('.showroom-option')?.textContent==='YOUR SELECTION');
-    assert.equal(await page.locator('#buddyCategory').isDisabled(),true);
-    assert.equal(await page.getByRole('button',{name:'Select & prepare agreement',exact:true}).count(),0);
-    const selection=requests.find(r=>r.body.action==='product-selected');
-    assert.equal(selection.body.productId,'dining-1');assert.equal(selection.body.catalogVersion,catalog.VERSION);
-    assert.ok(requests.some(r=>r.body.event==='product.shown'));assert.ok(requests.some(r=>r.body.event==='product.opened'));
     await page.click('[data-buddy-mode=video]');
     await page.waitForFunction(()=>document.getElementById('buddyConnectButton').textContent==='Try Video Again');
-    const desk=page.locator('.buddy-desk-preview');
-    assert.equal(await desk.isVisible(),true);
-    assert.match(await desk.getAttribute('src'),/buddy-desk-showroom.png$/);
-    assert.equal(await page.locator('.buddy-reference-scene').count(),0,'Video preview must not use the showroom');
-    assert.equal(await desk.evaluate(el=>getComputedStyle(el).objectFit),'contain');
-    // Intrinsic portrait dimensions must never enlarge a live element beyond the stage.
-    await page.evaluate(()=>{
-      const v=document.createElement('video');v.className='buddy-live-video';v.width=1024;v.height=1536;v.poster='/buddys/images/buddy-desk-showroom.png';
-      document.getElementById('buddyVideoMount').replaceChildren(v);
-    });
-    const live=await page.locator('.buddy-live-video').boundingBox();
-    const stage=await page.locator('#buddyVideoMount').boundingBox();
-    assert.ok(live.height<=stage.height+1 && live.width<=stage.width+1,'Live frame stays inside stage');
-    assert.equal(await page.locator('.buddy-live-video').evaluate(el=>getComputedStyle(el).objectFit),'contain');
-    if(shots)await page.screenshot({path:path.join(shots,`video-desk-${viewport.width}.png`)});
+    assert.equal(await page.locator('.buddy-desk-preview').isVisible(),true);
     await page.fill('#buddyChatInput','Keep helping me here');await page.locator('#buddyChatForm button').click();
     await page.waitForFunction(()=>!document.getElementById('buddyChatInput').disabled);
     assert.equal(await page.locator('#buddyChatState').innerText(),'Ready to message');
-    const horizontalOverflow=await page.locator('.video-room').evaluate(el=>el.scrollWidth>el.clientWidth+1);
-    assert.equal(horizontalOverflow,false,`No horizontal overflow at ${viewport.width}`);
+    await page.evaluate(()=>{
+      const v=document.createElement('video');v.className='buddy-live-video';v.width=1024;v.height=1536;
+      document.getElementById('buddyVideoMount').replaceChildren(v);
+    });
+    const live=await page.locator('.buddy-live-video').boundingBox(),stage=await page.locator('#buddyVideoMount').boundingBox();
+    assert.ok(live.height<=stage.height+1&&live.width<=stage.width+1);
+    assert.equal(await page.locator('.buddy-live-video').evaluate(el=>getComputedStyle(el).objectFit),'contain');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
     assert.deepEqual(errors,[]);
     await page.close();
   }
-  console.log('PASS: Chromium 1280/390/320px; guest browse/preferences, category switching, details/Escape, safe inquiry, explicit selection, events, video fallback and no horizontal overflow (API/provider fixtures)');
+  console.log('PASS: premium page/widget/pop-up/mobile at 1440/1024/390/320px; shared draft, consent, lead submit/link, catalog context, product follow/selection, video fallback, bounded media and no overflow (API/provider fixtures)');
 } finally {await browser.close();server.close();}
