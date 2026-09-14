@@ -612,3 +612,13 @@ textarea:focus-visible {
     padding-bottom: 130px;
   }
 }
+
+/* Buddy's premium operator support */
+.buddy-support .support-launcher{background:linear-gradient(105deg,#0a2d6c,#1764c8);border:1px solid #4f83c9;box-shadow:0 12px 32px #09295655}
+.buddy-support .support-panel{width:520px;background:#07152f;border:1px solid #2d65ae;border-radius:22px;box-shadow:0 28px 80px #07152f66;color:#e8f1ff}
+.buddy-support .support-panel header{padding:20px;background:radial-gradient(circle at 84% 0,#244f9a,transparent 42%),linear-gradient(115deg,#0b2d69,#07142e);border-bottom:3px solid #ffe429;color:#fff}
+.buddy-support .support-panel header p{color:#bed3f1}.support-avatar{width:58px;height:58px;flex:0 0 58px;padding:3px;border:2px solid #ffe429;border-radius:16px;background:#fff;overflow:hidden}.support-avatar img{width:100%;height:100%;border-radius:12px;object-fit:cover;object-position:center top}.support-heading{min-width:0}.support-eyebrow,.support-kicker{display:flex;align-items:center;gap:5px;color:#ffe429;font-size:9px;font-weight:800;letter-spacing:1.2px;margin-bottom:6px}
+.buddy-support .support-categories{background:#08152d;border-color:#243b63}.buddy-support .support-categories button{border:1px solid #263e68;background:#0c1935;color:#bed0ec}.buddy-support .support-categories button[aria-pressed=true]{background:linear-gradient(100deg,#174c9a,#24467f);color:#fff;border-color:#4d79bd}
+.buddy-support .support-body{background:#071126;color:#e8f1ff}.support-status{display:flex;gap:8px;margin-bottom:12px}.support-status span{display:flex;align-items:center;gap:5px;border:1px solid #28456f;border-radius:999px;padding:6px 9px;color:#9fb8dc;font-size:8px;font-weight:800;letter-spacing:.6px}.support-status i{width:7px;height:7px;border-radius:50%;background:#4de19a;box-shadow:0 0 9px #4de19a}
+.buddy-support .support-intro{border-color:#315590;background:linear-gradient(120deg,#0d2148,#171c48)}.buddy-support .support-intro p{color:#b8c9e3}.buddy-support .support-intro button{background:#10234a;color:#fff;border:1px solid #43699f}.buddy-support .support-count{color:#86a0c5}.buddy-support .support-body details{border-color:#243b63;background:#0a1731}.buddy-support .support-body details p{color:#b4c7e1}.buddy-support .support-footer{color:#718aae}
+@media(max-width:600px){.buddy-support .support-panel{width:calc(100vw - 24px)}}

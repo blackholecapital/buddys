@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Headphones, Search, X } from "lucide-react";
+import { BookOpen, Headphones, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import "./CallCenter.css";
 
 const articles = [
@@ -140,12 +140,11 @@ export default function SupportGuide({
           }}
         >
           <header>
-            <span className="support-mark">
-              <BookOpen size={22} />
-            </span>
-            <div>
-              <h2 id="support-title">Buddy’s Operating Guide</h2>
-              <p>Help for operators and corporate teams · available anytime</p>
+            <span className="support-avatar"><img src="/buddys/images/buddy-avatar.jpg" alt="" /></span>
+            <div className="support-heading">
+              <span className="support-eyebrow"><Sparkles size={11}/> BUDDY’S CRM SUPPORT</span>
+              <h2 id="support-title">Your operations copilot</h2>
+              <p>Pipeline, calls, documents and delivery — made clear 24/7</p>
             </div>
             <button aria-label="Close support guide" onClick={close}>
               <X size={18} />
@@ -166,9 +165,11 @@ export default function SupportGuide({
             ))}
           </div>
           <div className="support-body">
+            <div className="support-status"><span><i/> GUIDE ONLINE</span><span><ShieldCheck size={12}/> OPERATOR WORKSPACE</span></div>
             <div className="support-intro">
-              <b>Your next step, made clear.</b>
-              <p>Find instructions or jump to the right workspace.</p>
+              <span className="support-kicker"><BookOpen size={13}/> OPERATING GUIDE</span>
+              <b>Find the answer. Run the next play.</b>
+              <p>Search every part of Buddy’s CRM or jump directly to the workspace you need.</p>
               <div className="cc-actions">
                 {["Pipeline", "Call Center", "Documents", "Deliveries"].map(
                   (tab) => (
@@ -212,7 +213,7 @@ export default function SupportGuide({
               </p>
             )}
             <small className="support-footer">
-              Self-service guide · no live agent or ticket submission
+              Buddy’s CRM support · powered by Black Hole AI + EILA OS
             </small>
           </div>
         </section>
@@ -225,8 +226,8 @@ export default function SupportGuide({
       >
         <Headphones size={25} />
         <span>
-          <b>24-hour support</b>
-          <small>Buddy’s operator guide</small>
+          <b>Buddy Support</b>
+          <small>CRM operator guide · 24/7</small>
         </span>
       </button>
     </div>
