@@ -43,6 +43,7 @@
   let transcriptTimer = null;
   let showroomState = {products:[],categories:[],category:""};
   const showroomEvents = new Set();
+  let lastPresentedProduct = "";
   let workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null, resumePrompt:"", announced:false };
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -69,7 +70,7 @@
 
   function renderPlaceholder(message, detail = "Message now or connect on video when ready") {
     if(experienceMode === "showroom") {
-      mount.innerHTML = `<div class="showroom-preview"><div class="buddy-reference-scene" role="img" aria-label="Buddy standing beside a sectional in the showroom"></div><span class="preview-label">VIRTUAL SHOWROOM PREVIEW</span><div class="preview-caption"><b id="buddyVideoStatus">Coming Soon</b><span>Explore the collection with Buddy</span></div></div>`;
+      mount.innerHTML = `<div class="showroom-preview"><div class="buddy-reference-scene" role="img" aria-label="Buddy standing beside a sectional in the showroom"></div><span class="preview-label">BUDDY’S VIRTUAL SHOWROOM</span><div class="preview-caption"><b id="buddyVideoStatus">Explore with Buddy</b><span>Explore the collection with Buddy</span></div></div>`;
       return;
     }
     mount.innerHTML = `<div class="video-placeholder">
@@ -278,6 +279,14 @@
     }
   }
 
+  function presentProduct(product) {
+    if (!product || !room || !agentReady) return;
+    const key = `${sessionMeta.sessionId}:${product.id}`;
+    if (key === lastPresentedProduct) return;
+    lastPresentedProduct = key;
+    void sendWorkflowUpdate(`The customer is viewing this demo product, not selecting it: ${JSON.stringify({name:product.name,description:product.description,specs:product.specs,demoPrice:product.demoPrice})}. Explain it using only these catalog facts. Confirm price and availability with the store.`);
+  }
+
   function reportShowroomEvent(event, product) {
     const auth = room && agentReady ? sessionMeta : chatMeta;
     if (!auth) return;
@@ -291,12 +300,12 @@
   }
 
   async function openPreferences(category) {
-    await closeWorkspace();
+    if (!window.BuddyPremium) await closeWorkspace();
     const form = document.getElementById("demoForm");
     const interest = form?.querySelector('[name="product_interest"]');
     if (interest) interest.value = category;
-    const method = form?.querySelector('[name="contact_method"][value="Message"]');
-    if (method) { method.checked = true; method.dispatchEvent(new Event("change",{bubbles:true})); }
+    const method = form?.querySelector('[name="contact_method"]');
+    if (method) { method.value = "Message"; method.dispatchEvent(new Event("change",{bubbles:true})); }
     form?.scrollIntoView({behavior:"smooth",block:"start"});
     form?.querySelector('input')?.focus({preventScroll:true});
   }
@@ -309,7 +318,7 @@
       locked:!["idle","guest","browsing","awaiting-product"].includes(workflow.phase),
       selectedProduct:workflow.selectedProduct || "",
     },{onSelect:index=>void chooseProduct(index),onCategory:category=>void changeCategory(category),
-      onEvent:reportShowroomEvent,onLead:category=>void openPreferences(category)});
+      onEvent:reportShowroomEvent,onPresent:presentProduct,onLead:category=>void openPreferences(category)});
   }
 
   async function loadGuestShowroom(category = pendingContext.interest || "Living Room Furniture") {
@@ -332,6 +341,7 @@
         await sendWorkflowUpdate(result.workflow.resumePrompt);
       } else {
         await loadGuestShowroom(category);
+        presentProduct(showroomState.products.find(product => product.id === window.BuddyShowroom?.context()?.productId));
         pendingContext.interest = category;
         saveContext();
       }
@@ -476,7 +486,7 @@
     const epoch = workspaceEpoch;
     chatPromise = (async () => {
       const response = await fetch("/api/chat/session", {
-        method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(pendingContext),
+        method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({...pendingContext,showroom:window.BuddyShowroom?.context()}),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.ok !== true) {
@@ -538,8 +548,8 @@
     saveContext();
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
-    document.body.classList.add("buddy-workspace-open");
+    if (window.BuddyPremium) window.BuddyPremium.reveal();
+    else { document.body.style.overflow = "hidden"; document.body.classList.add("buddy-workspace-open"); }
     updateWorkspaceHeader();
     if (startVideo) {
       void enableVideo();
@@ -719,7 +729,7 @@
       const response = await fetch("/api/video/session", {
         method:"POST",
         headers:{ "content-type":"application/json", "accept":"application/json" },
-        body:JSON.stringify(pendingContext),
+        body:JSON.stringify({...pendingContext,showroom:window.BuddyShowroom?.context()}),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data?.ok === false) throw new Error(data?.error || "Buddy session failed");
@@ -805,6 +815,7 @@
 
   async function closeWorkspace() {
     closing = true;
+    lastPresentedProduct = "";
     workspaceEpoch++;
     chatMeta = null;
     chatPromise = null;
@@ -826,8 +837,8 @@
     sessionTranscript = [];
     workflow = { phase:"idle", busy:false, productOptions:[], deliveryOptions:[], statusTimer:null, resumePrompt:"", announced:false };
     closing = false;
-    modal.classList.add("hidden");
-    modal.setAttribute("aria-hidden", "true");
+    if (window.BuddyPremium) window.BuddyPremium.end();
+    else { modal.classList.add("hidden"); modal.setAttribute("aria-hidden", "true"); }
     document.body.style.overflow = "";
     document.body.classList.remove("buddy-workspace-open");
     renderPlaceholder("Ready to message Buddy");
@@ -840,6 +851,7 @@
     event.preventDefault();
     const text = String(chatInput.value || "").trim();
     if (!text) return;
+    const showroomContext = window.BuddyShowroom?.context();
     chatInput.disabled = true;
     const epoch = workspaceEpoch;
     try {
@@ -859,7 +871,7 @@
         const response = await fetch("/api/chat/message", {
           method:"POST",headers:{"content-type":"application/json"},
           body:JSON.stringify({contactId:chatMeta.contactId,chatSessionId:chatMeta.chatSessionId,
-            chatToken:chatMeta.chatToken,...pendingMessage}),
+            chatToken:chatMeta.chatToken,...pendingMessage,showroom:showroomContext}),
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.ok !== true) throw new Error(data.error || "Buddy messaging is unavailable");
@@ -895,13 +907,21 @@
     if (room && sessionMeta.contactId) void persistVideoSession(true);
   });
 
+  window.addEventListener("buddy:end-requested", closeWorkspace);
   closeButton.addEventListener("click", closeWorkspace);
   hangupButton.addEventListener("click", closeWorkspace);
-  modal.addEventListener("click", (event) => { if (event.target === modal) closeWorkspace(); });
+  modal.addEventListener("click", (event) => { if (event.target === modal && !window.BuddyPremium) closeWorkspace(); });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !modal.classList.contains("hidden")) {
       if (window.BuddyShowroom?.closeDetails()) return;
-      closeWorkspace();
+      if (!window.BuddyPremium) closeWorkspace();
     }
   });
+  if (window.BuddyPremium) {
+    setExperience("message");
+    renderPlaceholder("Your personal shopper");
+    void loadGuestShowroom().catch(error => {
+      document.getElementById("buddyShowroomNotice").textContent = error.message;
+    });
+  }
 })();

@@ -1,3 +1,4 @@
+const { showroomContext } = require('../../../../shared/services/showroom-context');
 const { readDb, mutate } = require("../../../layers/core/db");
 const conversations = require("../../../layers/domain/conversations");
 const rateLimits = require("../../../layers/domain/rateLimits");
@@ -33,6 +34,7 @@ module.exports = async function handler({ method, body = {}, env }) {
       method:"POST",headers:{"content-type":"application/json"},
       body:JSON.stringify({tenantId:"buddys",assistantId:"buddy",messages:[
         {role:"user",content:`[BUDDY WORKFLOW — server state]\n${workflow.resumePrompt}`.slice(0,4000)},
+        {role:"user",content:showroomContext(body.showroom,contact?.interest)},
         ...previous,{role:"user",content:text},
       ]}),
     }));
