@@ -177,6 +177,35 @@
   <dialog id="premiumDialog" aria-label="Buddy's lead experience"><button type="button" id="premiumDialogClose" aria-label="Close lead pop-up">×</button></dialog>
 </main>
 
+<aside class="shopper-support" aria-label="Buddy's premium shopping support">
+  <section id="shopperSupportPanel" class="shopper-support-panel" role="dialog" aria-modal="false" aria-labelledby="shopperSupportTitle" hidden>
+    <header>
+      <img src="./images/buddy-avatar.jpg" alt="Buddy, your personal shopping assistant">
+      <div><span>THE BUDDY’S EXPERIENCE</span><h2 id="shopperSupportTitle">Premium Shopping Support</h2><p>Your guide to shopping, messaging, video and next steps.</p></div>
+      <button type="button" data-support-close aria-label="Close premium support">×</button>
+    </header>
+    <div class="shopper-support-status"><span><i></i> BUDDY ONLINE</span><span>AVAILABLE 24/7</span><span>POWERED BY EILA OS</span></div>
+    <div class="shopper-support-body">
+      <div class="shopper-support-hero"><small>YOUR BUDDY. YOUR WAY.</small><strong>How can we help you get comfortable?</strong><p>Choose a topic below or jump straight into the experience.</p><div><button type="button" data-support-action="message">Message Buddy</button><button type="button" data-support-action="video">Start Video</button><button type="button" data-support-action="showroom">Explore Showroom</button></div></div>
+      <label class="shopper-support-search"><span aria-hidden="true">⌕</span><input id="shopperSupportSearch" type="search" placeholder="Search shopping help…" aria-label="Search shopping help"></label>
+      <div id="shopperSupportArticles" class="shopper-support-articles">
+        <details data-search="start shop page form contact request"><summary>How do I get started?</summary><p>Browse on the Page view, choose Message to chat with Buddy, Video for a face-to-face shopping conversation, or Showroom to compare featured products. Complete the short request form when you want your local Buddy’s team to follow up.</p></details>
+        <details data-search="message chat questions products furniture appliances electronics"><summary>What can I ask Buddy?</summary><p>Ask about furniture, mattresses, appliances, electronics, product features, shopping categories, store areas, delivery steps, or what to compare next. Never send payment-card numbers, passwords, or other sensitive financial information in chat.</p></details>
+        <details data-search="video camera microphone live call"><summary>How does Video Buddy work?</summary><p>Select Video, submit your contact request, then connect when the video workspace is ready. Your microphone remains off until you connect. You can end the session at any time with the phone control.</p></details>
+        <details data-search="showroom browse compare favorite product category"><summary>How do I use the virtual showroom?</summary><p>Open Showroom, select a category, and choose a featured item to see more detail. Ask Buddy questions as you browse. Product availability, exact pricing, financing, and fulfillment are confirmed by the appropriate Buddy’s team.</p></details>
+        <details data-search="form contact callback email phone text sms consent"><summary>What happens after I submit?</summary><p>Your request enters the Buddy’s follow-up workflow using the contact method you selected. Choosing text requires consent. Submitting a request does not complete a purchase, approve financing, reserve inventory, or schedule delivery.</p></details>
+        <details data-search="delivery schedule appointment status"><summary>Can Buddy schedule delivery?</summary><p>Buddy can help capture what you need and guide the next step. Delivery timing is confirmed after the purchase or rental workflow is complete. Use the contact request to have the team review availability and scheduling with you.</p></details>
+        <details data-search="financing payment lease rent approval"><summary>Can I discuss financing here?</summary><p>You can ask general questions and request follow-up about financing or rental options. Do not enter card, bank, Social Security, or account credentials. Eligibility, terms, approvals, and final pricing must be confirmed through Buddy’s authorized process.</p></details>
+        <details data-search="human customer service unresolved issue phone"><summary>I still need help. Who do I contact?</summary><p>For account-specific or unresolved customer-service matters, call Buddy’s Customer Service at <a href="tel:+18552989325">1-855-298-9325</a>. For shopping help, Message Buddy or submit the contact form and select your preferred follow-up method.</p></details>
+      </div>
+      <p id="shopperSupportEmpty" class="shopper-support-empty" hidden>No matching answer. Try “video,” “delivery,” “financing,” or “contact.”</p>
+    </div>
+  </section>
+  <button type="button" id="shopperSupportLauncher" class="shopper-support-launcher" aria-expanded="false">
+    <img src="./images/buddy-avatar.jpg" alt=""><span><b>Premium Support</b><small>Ask Buddy · available 24/7</small></span>
+  </button>
+</aside>
+
 <footer class="site-footer">
   <div>
     <img src="./images/BHF_Logo.webp" alt="Buddy's Home Furnishings">
@@ -288,6 +317,7 @@
 })();
 </script>
 <script src="./premium.js?v=20260914-glass-crm"></script>
+<script src="./support.js?v=20260914-premium"></script>
 <script src="./showroom.js?v=20260914-glass-crm"></script>
 <script src="./video.js?v=20260914-mobile-showroom"></script>
 </body>
