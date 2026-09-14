@@ -2,6 +2,7 @@
 // choices, not a live stock/pricing feed. Specs below are limited to facts
 // already present in the committed web/voice catalog; null means unconfirmed.
 const VERSION = 'buddy-showroom-v1';
+const photos = require('./buddy-photo-sources.json');
 const rows = {
   'Living Room Furniture': [
     ['living-reclining-sofa','Power Reclining Sofa','A sofa option with powered reclining.','sofa',{'Style':'Power reclining'}],
@@ -80,7 +81,7 @@ function products(interest = '') {
   const category = categoryFor(interest);
   return (rows[category] || []).map(([id,name,description,illustration,specs],optionIndex) => ({
     id,name,category,optionIndex,description,demoPrice:demoDetails[id][0],features:demoDetails[id][1],specs:Object.entries(specs).map(([label,value])=>({label,value})),
-    image:id==='living-sectional'?{src:'/buddys/images/couch.PNG',alt:'Harris 2-Piece Sectional — supplied demo product image',kind:'product'}:{src:`/buddys/images/showroom/${illustration}.svg`,alt:`${name} demo product visual; model appearance may vary`,kind:'demo'},
+    image:id==='living-sectional'?{src:'/buddys/images/couch.PNG',alt:'Harris 2-Piece Sectional — supplied demo product image',kind:'product'}:{...photos[id],fallback:`/buddys/images/showroom/${illustration}.svg`},
     productUrl:null,price:null,availability:'Confirm model, finish, availability and agreement terms with your store.',
     catalogVersion:VERSION,
   }));

@@ -52,6 +52,9 @@ try {
     await page.route('https://**/*',route=>route.abort());
     await page.goto(origin+'/buddys/');
     await page.waitForSelector('.showroom-product',{state:'attached'});
+    assert.equal(await page.locator('.premium-intro').isVisible(),false);
+    assert.equal(await page.locator('#buddyChatForm button').getAttribute('aria-label'),'Send message');
+    assert.equal(await page.locator('.premium-ready').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)');
     assert.equal(requests.filter(r=>r.path==='/api/chat/session').length,0,'No session allocation before interaction');
     assert.equal(await page.locator('#demoForm').count(),1);
     await page.fill('[name=first_name]','Sam');
@@ -72,6 +75,8 @@ try {
     assert.equal(await page.locator('.premium-media-chrome').count(),1,'One premium media status layer');
     assert.equal(await page.locator('.buddy-chat-heading').isVisible(),false,'Legacy message status bar stays removed');
     await page.click('.premium-formats [data-format=page]');
+    const assets=Object.values(catalog.categories).flatMap(c=>catalog.products(c).map(p=>p.image.src));
+    assert.equal(await page.evaluate(async urls=>{const results=await Promise.all(urls.map(src=>new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img.naturalWidth>0);img.onerror=()=>resolve(false);img.src=src;})));return results.every(Boolean);},assets),true,'All 18 catalog photographs load');
     await page.click('[data-buddy-mode=message]');
     await page.waitForFunction(()=>document.getElementById('buddyChatState').textContent==='Ready to message');
     assert.equal(requests.filter(r=>r.path==='/api/video/session').length,0);

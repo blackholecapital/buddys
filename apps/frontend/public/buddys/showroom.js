@@ -14,7 +14,9 @@
   function image(product) {
     const img=node('img');
     // Accept only the exact uploaded couch asset or repository-owned demo visuals.
-    img.src=product.image?.src==='/buddys/images/couch.PNG'?product.image.src:/^\/buddys\/images\/showroom\/[a-z0-9-]+\.(?:svg|png|webp)$/.test(product.image?.src || '')?product.image.src:'/buddys/images/showroom/sofa.svg';
+    img.src=product.image?.src==='/buddys/images/couch.PNG'?product.image.src:/^\/buddys\/images\/showroom\/[a-z0-9-]+\.(?:svg|png|webp|jpg)$/.test(product.image?.src || '')?product.image.src:'/buddys/images/showroom/sofa.svg';
+    img.loading='lazy';img.decoding='async';
+    img.addEventListener('error',()=>{img.src=/^\/buddys\/images\/showroom\/[a-z-]+\.svg$/.test(product.image?.fallback||'')?product.image.fallback:'/buddys/images/showroom/sofa.svg';},{once:true});
     img.alt=product.image?.alt || 'Product category illustration';
     img.width=480;img.height=300;
     return img;
@@ -49,7 +51,7 @@
       }catch{}
     }
     if(!state.locked)controls.append(select(product,index));
-    detail.append(back,image(product),node('span',product.image?.kind==='product'?'Demo product image':'Demo product visual · model appearance varies','showroom-caption'),title,
+    detail.append(back,image(product),node('span',product.image?.kind==='product'?'Demo product image':'Representative product photo · not the exact demo model','showroom-caption'),title,
       product.demoPrice?node('div',product.demoPrice+' · demo weekly estimate','showroom-price'):node('span'),
       node('p',product.description),specs,node('p',product.availability,'showroom-availability'),
       node('p','Dimensions, finish, pricing and payment terms: confirm with your store.','showroom-availability'),controls);
@@ -80,7 +82,7 @@
       if(product.demoPrice){const price=node('div',product.demoPrice,'showroom-price');price.append(node('small','Demo weekly estimate · confirm with your store'));card.append(price);}
       const features=node('ul',null,'showroom-features');
       for(const feature of product.features || (product.specs || []).map(spec=>spec.label+': '+spec.value))features.append(node('li',feature));
-      card.append(features,node('span',product.image?.kind==='product'?'Demo product · confirm model and terms':'Demo visual · exact model may vary','showroom-caption'),button('View details',()=>open(product,index)));
+      card.append(features,node('span',product.image?.kind==='product'?'Demo product · confirm model and terms':'Representative photo · exact demo model differs','showroom-caption'),button('View details',()=>open(product,index)));
       if(!next.locked)card.append(select(product,index));
       if(!gallery&&products.length>1&&!next.locked)card.append(button('See another example',()=>{const nextProduct=products[(index+1)%products.length];featuredId=nextProduct.id;render(state,callbacks);callbacks.onPresent?.(nextProduct);}));
       cards.append(card);

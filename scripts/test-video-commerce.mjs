@@ -119,7 +119,7 @@ try {
         assert.equal(product.image.src,'/buddys/images/couch.PNG');
         assert.equal(asset.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
         assert.equal(product.features.length,4);
-      } else assert.match(asset.toString('utf8'),/<svg/);
+      } else {assert.equal(product.image.kind,'representative-photo');assert.ok(asset.length>1000);assert.match(product.image.src,/\.(jpg|png|webp)$/);assert.ok(product.image.sourceUrl);}
     }
   }
   assert.equal(catalog.products('Financing Questions').length,0,'Support interests must not invent sellable products');
