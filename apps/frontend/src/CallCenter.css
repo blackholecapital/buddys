@@ -622,3 +622,20 @@ textarea:focus-visible {
 .buddy-support .support-body{background:#071126;color:#e8f1ff}.support-status{display:flex;gap:8px;margin-bottom:12px}.support-status span{display:flex;align-items:center;gap:5px;border:1px solid #28456f;border-radius:999px;padding:6px 9px;color:#9fb8dc;font-size:8px;font-weight:800;letter-spacing:.6px}.support-status i{width:7px;height:7px;border-radius:50%;background:#4de19a;box-shadow:0 0 9px #4de19a}
 .buddy-support .support-intro{border-color:#315590;background:linear-gradient(120deg,#0d2148,#171c48)}.buddy-support .support-intro p{color:#b8c9e3}.buddy-support .support-intro button{background:#10234a;color:#fff;border:1px solid #43699f}.buddy-support .support-count{color:#86a0c5}.buddy-support .support-body details{border-color:#243b63;background:#0a1731}.buddy-support .support-body details p{color:#b4c7e1}.buddy-support .support-footer{color:#718aae}
 @media(max-width:600px){.buddy-support .support-panel{width:calc(100vw - 24px)}}
+
+/* Keep every Buddy CRM surface scrollable without visible browser chrome. */
+.buddy-app,
+.buddy-app *,
+.support-categories,
+.support-body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.buddy-app::-webkit-scrollbar,
+.buddy-app *::-webkit-scrollbar,
+.support-categories::-webkit-scrollbar,
+.support-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
