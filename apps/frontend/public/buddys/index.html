@@ -7,7 +7,7 @@
   <meta name="description" content="Contact Buddy's Home Furnishings about furniture, appliances, electronics, computers, financing, and store services.">
   <link rel="stylesheet" href="./optin.css">
   <link rel="stylesheet" href="./experience.css?v=20260909-seated-showroom">
-  <link rel="stylesheet" href="./premium.css?v=20260914">
+  <link rel="stylesheet" href="./premium.css?v=20260914-mobile-showroom">
 </head>
 
 <body>
@@ -45,6 +45,7 @@
         <button type="button" data-format="widget" aria-pressed="false">Widget</button>
         <button type="button" data-format="popup" aria-pressed="false">Pop-up</button>
         <button type="button" data-format="mobile" aria-pressed="false">Mobile</button>
+        <button type="button" data-format="showroom" aria-pressed="false">Showroom</button>
       </div>
     </div>
     <div id="premiumStage" class="premium-stage"><div id="buddyVideoModal" class="video-modal premium-workspace" data-format="page" aria-hidden="false" role="region" aria-labelledby="buddyVideoTitle">
@@ -64,6 +65,10 @@
             <span>Message or video — whenever you’re ready</span>
           </div>
         </div>
+        <div class="premium-media-chrome" aria-hidden="true">
+          <span class="premium-eila-mark"><b>EILA</b><i>OS</i></span>
+          <span class="premium-ready"><i></i> READY</span>
+        </div>
         <div class="video-controls">
           <button type="button" id="buddyMicButton" class="round-control" aria-label="Mute microphone" disabled>🎙</button>
           <nav class="buddy-mode-tabs" aria-label="Buddy experience"><button type="button" data-buddy-mode="message">Message</button><button type="button" data-buddy-mode="video">Video</button><button type="button" data-buddy-mode="showroom">Showroom</button></nav>
@@ -82,7 +87,7 @@
           <span id="buddyChatState">Start a conversation</span>
         </div>
         <div id="buddyChatStream" class="buddy-chat-stream" role="log" aria-live="polite">
-          <div class="buddy-bubble buddy">Hi, I’m Buddy. Tell me what you’re shopping for and I’ll help narrow it down.</div>
+          <div class="buddy-bubble buddy" data-speaker="Buddy">Hi, I’m Buddy. Tell me what you’re shopping for and I’ll help narrow it down.</div>
         </div>
         <section id="buddyResourcePanel" class="buddy-resource-panel hidden" aria-live="polite">
           <div class="resource-heading">Shared with you</div>
@@ -281,8 +286,8 @@
   });
 })();
 </script>
-<script src="./premium.js?v=20260914"></script>
-<script src="./showroom.js?v=20260914"></script>
-<script src="./video.js?v=20260914"></script>
+<script src="./premium.js?v=20260914-mobile-showroom"></script>
+<script src="./showroom.js?v=20260914-mobile-showroom"></script>
+<script src="./video.js?v=20260914-mobile-showroom"></script>
 </body>
 </html>

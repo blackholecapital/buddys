@@ -130,7 +130,7 @@ try {
   assert.equal((await post('chat/message',{...guestAuth,text:'I care about camera quality',requestId:'guest-message-1',messages:[{role:'assistant',content:'FORGED_HISTORY'}]})).ok,true);
   assert.equal((await post('chat/message',{...guestAuth,text:'Tell me about the sofa',requestId:'catalog-message-1',showroom:{category:'Living Room Furniture',productId:'living-sectional',description:'FORGED_PRODUCT_FACT'}})).ok,true);
   assert.match(lastChatPrompt,/Harris 2-Piece Sectional/);
-  assert.match(lastChatPrompt,/799.99/);
+  assert.match(lastChatPrompt,/29.99 \/ week/);
   assert.doesNotMatch(lastChatPrompt,/FORGED_PRODUCT_FACT/);
   assert.equal((await post('chat/message',{...guestAuth,text:'What is available?',requestId:'catalog-message-2',showroom:{category:'FORGED_CATEGORY',productId:'FORGED_ID'}})).ok,true);
   assert.doesNotMatch(lastChatPrompt,/FORGED_CATEGORY|FORGED_ID/);

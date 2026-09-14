@@ -55,10 +55,11 @@ try {
     assert.equal(requests.filter(r=>r.path==='/api/chat/session').length,0,'No session allocation before interaction');
     assert.equal(await page.locator('#demoForm').count(),1);
     await page.fill('[name=first_name]','Sam');
-    for(const format of ['page','widget','mobile','popup']) {
+    for(const format of ['page','widget','mobile','popup','showroom']) {
       await page.click(`.premium-formats [data-format=${format}]`);
       assert.equal(await page.locator('[name=first_name]').inputValue(),'Sam','Format switches preserve draft');
       assert.equal(await page.locator('#buddyShowroom').isVisible(),!['mobile','popup'].includes(format)&&viewport.width>760);
+      if(format==='showroom'&&viewport.width>760)assert.equal(await page.locator('.showroom-product').count(),2,'Dedicated showroom presents both category products');
       assert.equal(await page.locator('#demoForm').count(),1);
       assert.equal(await page.locator('.video-room').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,`${format} no overflow at ${viewport.width}`);
       if(shots){await page.locator('#buddyVideoModal').screenshot({path:path.join(shots,`${format}-${viewport.width}.png`)});}
@@ -68,6 +69,8 @@ try {
         assert.equal(await page.locator('#buddyVideoModal').getAttribute('data-format'),'mobile');
       }
     }
+    assert.equal(await page.locator('.premium-media-chrome').count(),1,'One premium media status layer');
+    assert.equal(await page.locator('.buddy-chat-heading').isVisible(),false,'Legacy message status bar stays removed');
     await page.click('.premium-formats [data-format=page]');
     await page.click('[data-buddy-mode=message]');
     await page.waitForFunction(()=>document.getElementById('buddyChatState').textContent==='Ready to message');
@@ -137,5 +140,5 @@ try {
     assert.deepEqual(errors,[]);
     await page.close();
   }
-  console.log('PASS: premium page/widget/pop-up/mobile at 1440/1024/390/320px; shared draft, consent, lead submit/link, catalog context, product follow/selection, video fallback, bounded media and no overflow (API/provider fixtures)');
+  console.log('PASS: premium page/widget/pop-up/mobile/showroom at 1440/1024/390/320px; compact media chrome, shared draft, consent, lead submit/link, catalog context, product follow/selection, video fallback, bounded media and no overflow (API/provider fixtures)');
 } finally {await browser.close();server.close();}

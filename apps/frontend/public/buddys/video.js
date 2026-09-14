@@ -3,6 +3,7 @@
   const mount = document.getElementById("buddyVideoMount");
   const connectButton = document.getElementById("buddyConnectButton");
   const micButton = document.getElementById("buddyMicButton");
+  const micIcon = muted => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>${muted?'<path d="m4 4 16 16"/>':''}</svg>`;
   const messageButton = document.getElementById("instantMessageButton");
   const videoButton = document.getElementById("instantVideoButton");
   const closeButton = document.getElementById("closeVideoButton");
@@ -70,7 +71,7 @@
 
   function renderPlaceholder(message, detail = "Message now or connect on video when ready") {
     if(experienceMode === "showroom") {
-      mount.innerHTML = `<div class="showroom-preview"><div class="buddy-reference-scene" role="img" aria-label="Buddy standing beside a sectional in the showroom"></div><span class="preview-label">BUDDY’S VIRTUAL SHOWROOM</span><div class="preview-caption"><b id="buddyVideoStatus">Explore with Buddy</b><span>Explore the collection with Buddy</span></div></div>`;
+      mount.innerHTML = `<div class="showroom-preview"><div class="buddy-reference-scene" role="img" aria-label="Buddy standing beside a sectional in the showroom"></div><b id="buddyVideoStatus" class="sr-only">Explore with Buddy</b></div>`;
       return;
     }
     mount.innerHTML = `<div class="video-placeholder">
@@ -416,6 +417,7 @@
     if (!message) return;
     const bubble = document.createElement("div");
     bubble.className = `buddy-bubble ${sender}`;
+    bubble.setAttribute("data-speaker", sender === "user" ? "B" : "Buddy");
     bubble.textContent = message;
     chatStream.appendChild(bubble);
     chatStream.scrollTop = chatStream.scrollHeight;
@@ -790,7 +792,7 @@
       micEnabled = true;
       await room.localParticipant.setMicrophoneEnabled(true);
       micButton.disabled = false;
-      micButton.textContent = "🎙";
+      micButton.innerHTML = micIcon(false);
       remoteAudioElements.forEach((audio) => { audio.muted = false; });
       if (typeof room.startAudio === "function") await room.startAudio().catch(() => {});
       if (remoteVideoElement) mount.replaceChildren(remoteVideoElement);
@@ -889,6 +891,11 @@
   });
 
   document.getElementById("instantShowroomButton")?.addEventListener("click",()=>showWorkspace({source:"direct-showroom"},false,"showroom"));
+  window.addEventListener("buddy:format-requested", event => {
+    const format = event.detail?.format;
+    if (format === "showroom") void showWorkspace({source:"showroom-format"},false,"showroom");
+    else if (experienceMode === "showroom") void showWorkspace({source:`${format || "page"}-format`},false,"message");
+  });
   document.querySelectorAll('[data-buddy-mode]').forEach(button=>button.addEventListener('click',()=>showWorkspace({},button.dataset.buddyMode==='video',button.dataset.buddyMode)));
   messageButton.addEventListener("click", () => showWorkspace({ source:"direct-message" }, false));
   videoButton.addEventListener("click", () => showWorkspace({ source:"direct-video" }, true));
@@ -899,7 +906,7 @@
   micButton.addEventListener("click", async () => {
     micEnabled = !micEnabled;
     if (room) await room.localParticipant.setMicrophoneEnabled(micEnabled);
-    micButton.textContent = micEnabled ? "🎙" : "🔇";
+    micButton.innerHTML = micIcon(!micEnabled);
     micButton.setAttribute("aria-label", micEnabled ? "Mute microphone" : "Unmute microphone");
   });
 
