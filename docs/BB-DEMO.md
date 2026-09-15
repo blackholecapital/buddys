@@ -17,6 +17,6 @@ Names and prices transcribed from supplied captures (not a live pricing feed):
 
 Static bag total: $221.90. The interface notes that offers may change.
 
-Live chat/voice/video remain pending assistant registration. This is a portrait and catalog update; it changes no runtime bindings or sealed files.
+The showroom includes a deterministic demo stylist: typed messages, occasion selections, and outfit selections produce polished scripted replies with assistant/customer avatars. This is intentionally local presentation logic; live LLM, voice, and video still require separate assistant registration. It changes no runtime bindings or sealed files.
 
-Validation: frontend production build and scripts/test-bb-demo.mjs (image swaps, filters, hearts, disabled live inputs, overflow at 1672/1024/390px). No deployment.
+Validation: frontend production build and scripts/test-bb-demo.mjs (image swaps, filters, hearts, demo chat, avatar bubbles, overflow at 1672/1024/390px). No deployment.
