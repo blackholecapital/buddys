@@ -23,7 +23,7 @@ function corsHeaders(request, manifest) {
   return {
     "access-control-allow-origin": allowedOrigin,
     "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-headers": "content-type",
+    "access-control-allow-headers": "content-type, authorization",
     "access-control-max-age": "86400",
     vary: "Origin",
   };
@@ -197,6 +197,23 @@ async function authorizeCloudflareAccess(request, env) {
   }
 }
 
+async function authorizeTenantSession(request, env, manifest) {
+  const authorization = request.headers.get("authorization") || "";
+  if (!/^Bearer [^\s]{1,2048}$/.test(authorization) || !env.TENANT_AUTH?.fetch) return null;
+  if (request.headers.get("origin") !== manifest.deployment?.app_origin) return null;
+  try {
+    const response = await env.TENANT_AUTH.fetch(new Request("https://tenant-auth.internal/api/runtime/settings-authorize", {
+      method: "POST", redirect: "manual", signal: AbortSignal.timeout(5000),
+      headers: { authorization, "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: manifest.tenant_id }),
+    }));
+    if (!response.ok) return null;
+    const identity = await response.json();
+    if (identity.ok !== true || identity.tenantId !== manifest.tenant_id || typeof identity.subject !== "string" || !identity.subject || identity.subject.length > 200) return null;
+    return { subject: identity.subject, email: "" };
+  } catch { return null; }
+}
+
 export function createTenantAdapter({
   manifest,
   instructionsFor = (assistant) => `You are ${assistant.display_name}. Be concise, capable, and conversational.`,
@@ -235,7 +252,14 @@ export function createTenantAdapter({
     if (!assistant) return json({ ok: false, code: "unknown_assistant" }, 404);
     const state = await readState(env, manifest, assistant);
     const origin = String(env.APP_ORIGIN || new URL(request.url).origin).replace(/\/$/, "");
-    const avatarImageUrl = state.avatar?.uploaded
+    const variantId = body.metadata?.avatarVariant;
+    const variants = assistant.avatar_variants || {};
+    const variant = typeof variantId === "string" && Object.hasOwn(variants, variantId) ? variants[variantId] : null;
+    if (variantId !== undefined && !variant) return json({ ok:false, code:"unknown_avatar_variant" }, 400);
+    if (variant && (!variant.url?.startsWith("https://") || new URL(variant.url).origin !== new URL(manifest.deployment.app_origin).origin)) {
+      return json({ ok:false, code:"invalid_avatar_variant" }, 409);
+    }
+    const avatarImageUrl = variant ? variant.url : state.avatar?.uploaded
       ? `${origin}/assets/assistants/${assistant.assistant_id}/avatar`
       : state.avatar?.url;
     if (!avatarImageUrl) return json({ ok: false, code: "avatar_not_configured" }, 409);
@@ -253,7 +277,7 @@ export function createTenantAdapter({
       avatarSource: "image-url",
       lemonsliceAgentId: "",
       avatarImageUrl,
-      avatarPrompt: String(body.metadata?.avatarPrompt || "Maintain the original composition with natural attentive movement.").slice(0, 1_000),
+      avatarPrompt: String(variant?.prompt || body.metadata?.avatarPrompt || "Maintain the original composition with natural attentive movement.").slice(0, 1_000),
       voiceProvider: "eila-runtime",
       voiceModel: "",
       voiceId: state.voice?.id || assistant.voice.id,
@@ -268,14 +292,17 @@ export function createTenantAdapter({
     if (!upstream.ok || data.ok === false) {
       return json({ ok: false, code: "video_broker_failed", error: data.error }, upstream.ok ? 502 : upstream.status);
     }
-    return json({ ...data, ok: true, tenantId: manifest.tenant_id, assistantId: assistant.assistant_id });
+    return json({ ...data, ok: true, tenantId: manifest.tenant_id, assistantId: assistant.assistant_id, avatarVariant: variant ? variantId : null });
   }
 
   async function updateSettings(request, env) {
     const settingsAuthMode = String(env.SETTINGS_AUTH_MODE || "access").trim().toLowerCase();
-    const identity = settingsAuthMode === "public"
-      ? { email: "", subject: "public-settings" }
-      : await authorizeSettings(request, env);
+    const expectedMode = manifest.deployment?.settings_auth_mode;
+    if (expectedMode === "tenant-session" && settingsAuthMode !== expectedMode) return json({ok:false,code:"settings_auth_drift"},503);
+    const identity = settingsAuthMode === "tenant-session"
+      ? await authorizeTenantSession(request, env, manifest)
+      : settingsAuthMode === "public" ? { email: "", subject: "public-settings" }
+      : settingsAuthMode === "access" ? await authorizeSettings(request, env) : null;
     if (!identity) return json({ ok: false, code: "settings_forbidden" }, 403);
     if (!env.ASSISTANT_ASSETS?.put) return json({ ok: false, code: "asset_binding_missing" }, 503);
     const form = await request.formData();
@@ -354,7 +381,7 @@ export function createTenantAdapter({
   return {
     async fetch(request, env) {
       const url = new URL(request.url);
-      const isTenantApi = ["/api/chat", "/api/video/session"].includes(url.pathname);
+      const isTenantApi = ["/api/chat", "/api/video/session", "/settings/api/assistant-settings"].includes(url.pathname);
       if (request.method === "OPTIONS" && isTenantApi) {
         const headers = corsHeaders(request, manifest);
         return Object.keys(headers).length > 0
@@ -378,7 +405,11 @@ export function createTenantAdapter({
         const runtimeConfigured = String(env.RUNTIME_URL || RUNTIME_URL) === RUNTIME_URL;
         const videoBindingConfigured = Boolean(env.VIDEO?.fetch);
         const assetBindingConfigured = Boolean(env.ASSISTANT_ASSETS?.get);
+        const settingsMode = String(env.SETTINGS_AUTH_MODE || "access").trim().toLowerCase();
+        const tenantAuthConfigured = Boolean(env.TENANT_AUTH?.fetch);
         const reasons = [];
+        if (manifest.deployment?.settings_auth_mode === "tenant-session" && settingsMode !== "tenant-session") reasons.push("settings authentication mode drift");
+        if (settingsMode === "tenant-session" && !tenantAuthConfigured) reasons.push("TENANT_AUTH service binding is not configured");
         if (!runtimeConfigured) reasons.push("canonical runtime URL drift");
         if (!runtimeTokenConfigured) reasons.push("BLACKHOLE_RUNTIME_TOKEN is not configured");
         if (!capabilityTokenConfigured) reasons.push("BLACKHOLE_CAPABILITY_TOKEN is not configured");
@@ -392,6 +423,7 @@ export function createTenantAdapter({
           tenantId: manifest.tenant_id,
           adapterVersion: manifest.adapter_version,
           settingsAuthMode: String(env.SETTINGS_AUTH_MODE || "access").trim().toLowerCase(),
+          tenantAuthConfigured,
           runtimeConfigured,
           runtimeTokenConfigured,
           capabilityTokenConfigured,
@@ -399,12 +431,12 @@ export function createTenantAdapter({
           assetBindingConfigured,
           reasons,
           assistants,
-        }, reasons.length === 0 ? 200 : 503);
+        }, reasons.length === 0 ? 200 : 503, corsHeaders(request, manifest));
       }
       if (request.method === "POST" && url.pathname === "/api/chat") return withCors(await chat(request, env), request, manifest);
       if (request.method === "POST" && url.pathname === "/api/video/session") return withCors(await videoSession(request, env), request, manifest);
       if (request.method === "POST" && url.pathname === "/settings/api/assistant-settings") {
-        return updateSettings(request, env);
+        return withCors(await updateSettings(request, env), request, manifest);
       }
       const avatarMatch = url.pathname.match(/^\/assets\/assistants\/([a-z0-9-]+)\/avatar$/);
       if (request.method === "GET" && avatarMatch) return avatarAsset(request, env, avatarMatch[1]);
@@ -415,3 +447,4 @@ export function createTenantAdapter({
 }
 
 export { authorizeCloudflareAccess, inspectVoiceWav };
+

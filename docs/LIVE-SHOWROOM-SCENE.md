@@ -1,29 +1,33 @@
-# Live showroom scene: activation prerequisite
+# Live showroom scene
 
-This pass preserves Showroom when its video control is clicked, during connection,
-and after failure. It requests a separate registered assistant; it never falls
-back to the seated Buddy. Other formats continue using assistant `buddy`.
+Showroom now requests registered avatar variant `showroom` on assistant `buddy`.
+The canonical Command Center adapter selects the committed buddy-show.PNG URL,
+while retaining Buddy's currently stored voice and ordinary avatar. The browser
+cannot supply another image URL. Unknown variants fail without a fallback.
+The UI keeps its showroom scene during connection and after failure. Other
+formats continue requesting the existing default Buddy avatar.
 
-## Activation (not completed)
+The kit was generated with the Command Center tenant:kit exporter, including its
+current canonical settings components. No sealed files were hand-patched.
+The prior BUDDY_SHOWROOM_ASSISTANT_ID variable is no longer used or needed.
 
-The committed sealed tenant manifest currently declares only `buddy`. Its video
-contract selects one stored avatar per assistant and ignores arbitrary image URLs.
-The runtime owner must provision a supported second Buddy tenant identity (for
-example `buddy-showroom`) through the tenant-kit configuration workflow, retaining
-the existing Buddy voice. Upload `apps/frontend/public/buddys/images/buddy-show.PNG`
-as that identity's avatar via its supported settings endpoint. Do not overwrite
-`buddy`, patch sealed adapter files, or bypass the adapter via the broker.
+## Deploy after the companion Command Center and Buddy PRs are merged
 
-After that identity is registered, configure `BUDDY_SHOWROOM_ASSISTANT_ID` on
-`buddys-dashboard-worker` with the registered ID and deploy the Buddy customer
-Pages and Dashboard changes using the existing runbook. Until then, Showroom
-keeps its image and chat and reports that animation is not connected.
+From the Buddy repository only:
 
-Acceptance: click video in Showroom, grant microphone access, confirm the real
-stream animates the standing Buddy in the same scene. Confirm no camera zoom or
-scene change, and that Page video still uses seated Buddy. The supplied motion
-prompt requests this framing; real provider behavior still requires this check.
+```bash
+bash scripts/deploy-buddy-showroom.sh
+```
 
-Validation: messaging lifecycle regression, video commerce API integration,
-frontend production build, and sealed tenant-kit validation. Tests use media
-fixtures and do not establish real provider animation quality.
+This checks the published scene hash, deploys buddys-assistant-adapter with
+existing ordinary variables preserved, then uses the existing customer release
+script for Pages, Dashboard and Concierge. No Command Center Worker or host
+service deployment is needed. No new keys or voice upload is required.
+
+Verify in the browser: Showroom video animates the standing scene, with voice;
+Message and regular Video retain seated Buddy. Test switching formats and ending
+sessions. A fixed wide-camera prompt requests full-body framing, but actual
+provider motion/framing must be checked live. Automated tests use media doubles.
+
+Rollback: redeploy the previous Buddy kit and customer release from the prior
+reviewed commit. Stored default avatar and voice are not modified by this release.
