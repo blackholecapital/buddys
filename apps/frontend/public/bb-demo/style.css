@@ -10,4 +10,27 @@
 .masthead{background:linear-gradient(105deg,#020202 45%,#231812 72%,#050403 88%);box-shadow:0 8px 30px #0009}.shop-tools{gap:19px}.shop-tools>span{display:inline-flex;align-items:center}.shop-tools svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}.masthead .motto{border-left:1px solid #d8b4a34d;padding-left:20px}
 .chat #occasions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:4px 0 10px;margin-left:36px;flex-shrink:0}.chat #occasions button{border:1px solid #c3a39040;border-radius:9px;background:linear-gradient(145deg,#ffffff0c,#0005);color:#e9d9d2;min-height:56px;padding:8px 3px;font-size:10px;transition:background .15s,border-color .15s}.chat #occasions button span{font-size:21px;line-height:1.2;margin:0 0 5px}.chat #occasions button:hover,.chat #occasions button[aria-pressed=true]{background:linear-gradient(145deg,#be807b42,#66413b33);border-color:#eeb5ab;color:#fff}.chat #occasions button:focus-visible{outline:2px solid #f7beb6;outline-offset:2px}
 .signature{min-height:158px;padding-right:112px;background:radial-gradient(ellipse at 100% 45%,#9d60504d,transparent 65%),linear-gradient(120deg,#191310,#030303);box-shadow:inset 0 1px 0 #ffffff12,0 12px 24px #0005}.signature-attendant{position:absolute;right:17px;top:33px;width:78px;height:78px;border-radius:50%;background:#eee url('./bebe-stylist.png') center 13%/145% auto no-repeat;border:1px solid #f5c3ad;box-shadow:0 0 0 5px #ffffff06,0 8px 22px #0009}.signature-attendant i{position:absolute;right:2px;bottom:4px;width:11px;height:11px;background:#35e58b;border:2px solid #17110e;border-radius:50%;box-shadow:0 0 10px #35e58b77}.signature>b{font-size:11px;line-height:1.6;display:block}.signature button{font-size:8px;padding:8px 5px;letter-spacing:.5px}.signature-tag{font-size:7px;letter-spacing:.6px}
-@media(max-width:760px){.chat #occasions{margin-left:0;gap:4px}.chat #occasions button{font-size:9px;min-height:49px}.chat #occasions button span{font-size:18px}.signature{min-height:158px}.masthead .motto{padding-left:10px}}
+/* Black showroom chrome; the supplied catalog photographs remain unaltered. */
+body,.panel,.chat,.rewards,.signature{background:#050505}
+.masthead{background:#000;border-bottom-color:#9c7a60}
+.experience,.showroom{min-width:0}
+.masthead{gap:clamp(16px,2.5vw,44px)}
+.masthead nav{min-width:0;gap:clamp(10px,1.5vw,28px)}
+.shop-tools{flex:none;color:#fff;gap:18px}
+.shop-tools svg{display:block;flex:none;width:22px;height:22px}
+.chat{padding-top:13px}
+.chat-row{flex-shrink:0}
+.chat-avatar{overflow:hidden;width:32px;height:32px;flex-basis:32px;background:#eee}
+.chat-avatar img,.signature-attendant img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 13%;transform:scale(1.45);transform-origin:center 13%}
+.stylist-avatar{background:#eee}
+.chat-row .bubble{max-width:calc(100% - 39px)}
+.occasion-links{display:block;margin-top:9px;line-height:2.2}
+.occasion-links button{display:inline;padding:2px 4px;margin:0 5px 0 0;border:0;border-radius:0;background:none;color:#f1c7bd;font-size:11px;text-decoration:underline;text-decoration-color:#b18e7c66;text-underline-offset:3px;white-space:nowrap}
+.occasion-links button:hover,.occasion-links button[aria-pressed=true]{color:#fff;text-decoration-color:#f7bdb3}
+.signature-attendant{overflow:visible;background:#eee}
+.signature-attendant img{border-radius:50%;transform:none;object-position:center 13%;object-fit:cover}
+.signature-attendant i{z-index:2}
+.signature{padding-right:110px}
+.signature button{display:block;min-height:34px}
+@media(max-width:1200px){.masthead{gap:18px}.masthead nav{gap:12px;font-size:9px}.shop-tools{gap:12px}.masthead .motto{padding-left:12px}}
+@media(max-width:760px){.signature{min-height:158px}.masthead .motto{padding-left:10px}.chat-avatar{width:26px;height:26px;flex-basis:26px}.chat-row .bubble{max-width:calc(100% - 33px)}}

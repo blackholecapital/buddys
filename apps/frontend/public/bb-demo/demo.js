@@ -22,6 +22,7 @@
   function addMessage(role,text,detail=''){
     const row=document.createElement('div');row.className=`chat-row ${role}`;
     const avatar=document.createElement('span');avatar.className=`chat-avatar ${role==='assistant'?'stylist-avatar':'customer-avatar'}`;avatar.setAttribute('aria-hidden','true');if(role==='user')avatar.textContent='b';
+    if(role==='assistant'){const photo=document.createElement('img');photo.src='./bebe-stylist.png';photo.alt='';photo.width=32;photo.height=32;avatar.append(photo);}
     const bubble=document.createElement('div');bubble.className='bubble';bubble.textContent=text;
     if(detail){const small=document.createElement('small');small.textContent=detail;bubble.append(small);}
     row.append(avatar,bubble);stream.append(row);stream.scrollTop=stream.scrollHeight;
@@ -41,8 +42,10 @@
   }
   function choose(look,announce=true){selected=look.id;crop(model,look);model.setAttribute('aria-label',`Model wearing ${look.name}`);document.getElementById('modelLabel').textContent=look.name;if(announce)addMessage('assistant',`${look.name} is in the spotlight.`,`It’s shown at $${look.price.toFixed(2)} in this demo. Want something bolder, softer, or more formal?`);render();}
   function render(){
-    nav.replaceChildren();
-    for(const [id,icon,label] of occasions){const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed',String(occasion===id));b.setAttribute('aria-label',`Filter ${label} looks`);const symbol=document.createElement('span');symbol.textContent=icon;symbol.setAttribute('aria-hidden','true');b.append(symbol,document.createTextNode(label));b.onclick=()=>setOccasion(id);nav.append(b);}
+    for(const target of [nav,document.getElementById('chatOccasions')]){
+      target.replaceChildren();
+      for(const [id,icon,label] of occasions){const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed',String(occasion===id));b.setAttribute('aria-label',`${target===nav?'Filter':'Chat about'} ${label} looks`);const symbol=document.createElement('span');symbol.textContent=icon;symbol.setAttribute('aria-hidden','true');b.append(symbol,document.createTextNode(' '+label));b.onclick=()=>setOccasion(id);target.append(b);}
+    }
     cards.replaceChildren();
     const visible=looks.filter(l=>occasion==='all'||l.tags.includes(occasion));
     for(const look of visible){const card=document.createElement('article');card.className='look'+(look.id===selected?' selected':'');card.dataset.look=look.id;
