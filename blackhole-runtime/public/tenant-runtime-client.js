@@ -11,7 +11,7 @@ export class TenantRuntimeError extends Error {
 }
 
 export class TenantRuntimeClient {
-  constructor({ tenantId, baseUrl = "", timeoutMs = DEFAULT_TIMEOUT_MS, fetchImpl = globalThis.fetch } = {}) {
+  constructor({ tenantId, baseUrl = "", timeoutMs = DEFAULT_TIMEOUT_MS, fetchImpl = (...args) => globalThis.fetch(...args) } = {}) {
     if (!tenantId) throw new TypeError("tenantId is required");
     if (typeof fetchImpl !== "function") throw new TypeError("fetch implementation is required");
     this.tenantId = tenantId;

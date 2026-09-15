@@ -172,22 +172,19 @@ try {
   assert.equal((await post('chat/message',{...chatMessage,contactId:'other'})).ok,false);
   assert.equal((await post('chat/session',{contactId})).ok,false);
   assert.equal(mediaCalls,0);
-  const beforeShowroomMedia = mediaCalls;
-  const unconfiguredShowroom = await post('video/session',{...textAuth,customerToken,contactId,experience:'showroom'});
-  assert.equal(unconfiguredShowroom.code,'showroom_avatar_not_configured');
-  assert.equal(mediaCalls,beforeShowroomMedia,'Never allocate the seated avatar for Showroom');
   const regularAssistant = env.ASSISTANT;
-  env.BUDDY_SHOWROOM_ASSISTANT_ID = 'buddy-showroom';
   env.ASSISTANT = {async fetch(req) {
     const payload = await req.json();
     assert.equal(payload.tenantId,'buddys');
-    assert.equal(payload.assistantId,'buddy-showroom');
-    assert.match(payload.metadata.avatarPrompt,/no zoom/);
-    return Response.json({ok:true,livekitUrl:'wss://media.test',token:'test',sessionId:'showroom-test'});
+    assert.equal(payload.assistantId,'buddy');
+    assert.equal(payload.metadata.avatarVariant,'showroom');
+    assert.equal(payload.metadata.avatarImageUrl,undefined);
+    return Response.json({ok:true,avatarVariant:'showroom',livekitUrl:'wss://media.test',token:'test',sessionId:'showroom-test'});
   }};
   assert.equal((await post('video/session',{...textAuth,customerToken,contactId,experience:'showroom',avatarImageUrl:'https://untrusted.test/image'})).ok,true);
+  env.ASSISTANT = {async fetch(){return Response.json({ok:true,livekitUrl:'wss://media.test',token:'test',sessionId:'old-adapter'});}};
+  assert.equal((await post('video/session',{...textAuth,customerToken,contactId,experience:'showroom'})).ok,false,'Never display a session from an adapter that ignored the scene');
   env.ASSISTANT = regularAssistant;
-  delete env.BUDDY_SHOWROOM_ASSISTANT_ID;
   const session=await post('video/session',{...textAuth,customerToken,contactId,interest:'wrong-client-override'});
   assert.match(session.workflow.resumePrompt,/I care about camera quality/);
   assert.equal(session.history.messages.length,8);

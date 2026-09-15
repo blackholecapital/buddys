@@ -5,15 +5,15 @@
   "adapter_version": "1.1.0",
   "sealed_files": {
     "src/index.js": "8847d89a4abaff56dfc247edec337c9bfb85b6e58cfbe97097bc009bd1b26d44",
-    "src/tenant-adapter.js": "db705a363208ada0e77f27804176993ff3e41eefa78eac31bd6e5fe2c8d7645b",
-    "src/tenant.manifest.json": "4f449309b28ac9f34e99c5a95544e546e2b41e39b63285fc07ad3a75f145930b",
-    "public/assistant-settings.js": "b3f24de4fce0a7b2d4c425c869784ed19cb24a72731441d50694a38ad353d850",
-    "public/tenant-runtime-client.js": "6180af5cccf42196cd05c20fbc0fdf835a6c8ab4a98e6f60e8defde1a9ca08db",
+    "src/tenant-adapter.js": "477ef2b2da30f958ed673f2432e6592f9d36a5f5a539700f9c1baab592c2e173",
+    "src/tenant.manifest.json": "16d22aeae8a09c696e1612da93c048a80d2c9673dbaa93a8305214579a9a27f6",
+    "public/assistant-settings.js": "7db033436a4ace4e69f91701c53c21f29cbeacf7b4560416d3654a788532d20b",
+    "public/tenant-runtime-client.js": "226616d5840e60d186f7524e98d9b0f0f83cffea2282a023537aef37b9c85c97",
     "public/settings.html": "c26e5eedb7029c3c28c5d2fed37e67c73c9ba751f625f4ae75672fb9822bda1f",
     "wrangler.jsonc": "e77a29cf7aedb21de9ed72a7e572f00a4e8d619d62feac6b4bf7327d42a9928e",
     "package.json": "2fad9b76ba0db1ed9ac90cad5c49cd344de7074335204051518b5bd7a5a62b22",
     "deploy.sh": "733677b8bd16365d15151311544c522a56c74a5dafb02324c73f1ee2d68a77fb",
-    "DEPLOY.md": "aa91001ff88a7075b99955f360a6c8fde935644840412be45e97ecea6416bc30",
+    "DEPLOY.md": "b03bdee3262f0c9f90aee17da5063143b41b4e8d356f6f141e8a0aed3f815654",
     "RUNTIME-BOUNDARY.md": "11aa2fbec7fd63855ac4204d8ec55cc13c4416931cebeb044d784e4319f9df08",
     "scripts/validate-kit.mjs": "14864937591b8cf433bd5da7f3dd199a352ca31830f90d3a331894808bbe3091"
   }

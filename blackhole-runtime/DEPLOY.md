@@ -6,7 +6,7 @@ Every generated file, including `src/index.js`, is sealed by `tenant-kit.lock.js
 ## Before deployment
 
 1. Confirm the shared runtime health endpoint is green.
-2. In Cloudflare Access, protect `buddys-assistant.xyz-labs.xyz/settings*` with the operator allow policy represented by the configured AUD.
+2. For tenant-session mode, mount the generated settings component inside the product login area and set its `getAuthorization` callback to return the current staff Bearer token. The TENANT_AUTH Worker must implement the authorization contract in DEPLOYMENT.md. Access mode: protect `buddys-assistant.xyz-labs.xyz/settings*` with the operator allow policy represented by the configured AUD.
 3. Confirm the custom hostname belongs to an active Cloudflare zone.
 4. Confirm the default Secrets Store contains `XYZ_DEMO_EILA_RUNTIME_TOKEN`.
 

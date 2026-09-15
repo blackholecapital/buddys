@@ -142,7 +142,14 @@ class BlackholeAssistantSettings extends HTMLElement {
 
       button.disabled = true;
       show("Uploading and validating…");
-      const response = await fetch(endpoint, { method: "POST", body, credentials: "same-origin" });
+      // Assigned as a property by the authenticated host app; never serialize a session in HTML or URLs.
+      const headers = new Headers();
+      if (typeof this.getAuthorization === "function") {
+        const authorization = await this.getAuthorization();
+        if (!authorization) throw new Error("Sign in before changing assistant assets");
+        headers.set("authorization", authorization);
+      }
+      const response = await fetch(endpoint, { method: "POST", body, headers, credentials: "same-origin", redirect: "error" });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error ?? payload.message ?? `Upload failed (${response.status})`);
       show("Assistant assets saved.", "success");
@@ -162,3 +169,4 @@ if (!customElements.get("blackhole-assistant-settings")) {
 
 export { BlackholeAssistantSettings };
 export { encodeMonoPcm16Wav, normalizeVoiceReference };
+
