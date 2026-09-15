@@ -37,13 +37,13 @@ const PERMISSION_MAP = {
  * Route → required permission mapping.
  */
 const ROUTE_PERMISSIONS = {
-  "GET /api/call-center": "contacts:read",
+  "GET /api/call-center": null, // Public demo CRM read
   "POST /api/call-center": "contacts:write",
   "POST /api/calls": "contacts:write",
   "GET /api/dashboard": "dashboard:read",
   "GET /api/orchestrator": "dashboard:read",
   "GET /api/system-status": "dashboard:read",
-  "GET /api/contacts": "contacts:read",
+  "GET /api/contacts": null, // Public demo CRM read
   "POST /api/contacts": "contacts:write",
   "PUT /api/contacts": "contacts:write",
   "DELETE /api/contacts": "contacts:write",
@@ -76,7 +76,7 @@ const ROUTE_PERMISSIONS = {
   "POST /api/video/session": null, // Public demo, guarded by server-side rate limits
   "POST /api/video/transcript": null, // Public session transcript, validated with the signed contact/session token
   "POST /api/video/action": null, // Signed public Buddy video workflow action
-  "GET /api/buddy-events": "inbox:read",
+  "GET /api/buddy-events": null, // Public demo CRM read
   "GET /api/reconciliation": "settings:read",
   "POST /webhooks": "webhooks:write",
 };
@@ -138,7 +138,7 @@ async function enforce(method, pathname, headers = {}, config = {}) {
   const user = await resolveUser(headers, config);
   const permission = resolvePermission(method, pathname);
 
-  // Health endpoint — always allowed
+  // Public route
   if (permission === null) return { allowed: true, user };
 
   // Unknown route
