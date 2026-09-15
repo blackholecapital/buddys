@@ -731,7 +731,7 @@
       const response = await fetch("/api/video/session", {
         method:"POST",
         headers:{ "content-type":"application/json", "accept":"application/json" },
-        body:JSON.stringify({...pendingContext,showroom:window.BuddyShowroom?.context()}),
+        body:JSON.stringify({...pendingContext,experience:experienceMode,showroom:window.BuddyShowroom?.context()}),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data?.ok === false) throw new Error(data?.error || "Buddy session failed");
@@ -782,7 +782,7 @@
       return;
     }
     try {
-      setExperience("video");
+      if (experienceMode !== "showroom") setExperience("video");
       if(!room)renderPlaceholder("Connecting Buddy’s live avatar…");
       setConnect("Connecting Video…", true);
       setStatus("Connecting Buddy's live avatar…");
@@ -896,7 +896,7 @@
     if (format === "showroom") void showWorkspace({source:"showroom-format"},false,"showroom");
     else if (experienceMode === "showroom") void showWorkspace({source:`${format || "page"}-format`},false,"message");
   });
-  document.querySelectorAll('[data-buddy-mode]').forEach(button=>button.addEventListener('click',()=>showWorkspace({},button.dataset.buddyMode==='video',button.dataset.buddyMode)));
+  document.querySelectorAll('[data-buddy-mode]').forEach(button=>button.addEventListener('click',()=>showWorkspace({},button.dataset.buddyMode==='video',modal.dataset.format==='showroom'?'showroom':button.dataset.buddyMode)));
   messageButton.addEventListener("click", () => showWorkspace({ source:"direct-message" }, false));
   videoButton.addEventListener("click", () => showWorkspace({ source:"direct-video" }, true));
   connectButton.addEventListener("click", enableVideo);
