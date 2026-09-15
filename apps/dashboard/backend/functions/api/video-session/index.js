@@ -33,6 +33,12 @@ module.exports = async function handler({ method, body, env }) {
   };
 
   try {
+    const showroom = body?.experience === "showroom";
+    // A separate registered identity prevents changing the regular Buddy avatar.
+    const showroomAssistant = String(env?.BUDDY_SHOWROOM_ASSISTANT_ID || "").trim();
+    if (showroom && (!/^[a-z0-9-]+$/.test(showroomAssistant) || showroomAssistant === "buddy")) {
+      return { ok:false, code:"showroom_avatar_not_configured", error:"Showroom animation is not connected yet. You can keep chatting with Buddy here." };
+    }
     if (!env?.ASSISTANT?.fetch) throw new Error("ASSISTANT binding not configured");
     if (contactId && !env.INTERNAL_CALL_SECRET) throw new Error("Video workflow signing is not configured");
     const chat = body?.chatSessionId ? await chatIdentity(env,body) : null;
@@ -45,8 +51,8 @@ module.exports = async function handler({ method, body, env }) {
       method:"POST",
       headers:{ "content-type":"application/json", accept:"application/json" },
       body:JSON.stringify({
-        tenantId:"buddys", assistantId:"buddy",
-        metadata:{ userId:contactId || crypto.randomUUID(), userName:[context.firstName, context.lastName].filter(Boolean).join(" ") || "Buddy customer" },
+        tenantId:"buddys", assistantId:showroom ? showroomAssistant : "buddy",
+        metadata:{ ...(showroom ? {avatarPrompt:"Keep the original wide showroom composition. Animate only Buddy standing beside the sofa with natural speech and subtle hand gestures. Keep his full body, furniture, and background visible. Fixed camera; no zoom, cuts, or scene changes."} : {}), userId:contactId || crypto.randomUUID(), userName:[context.firstName, context.lastName].filter(Boolean).join(" ") || "Buddy customer" },
       }),
     }));
     const result = await upstream.json().catch(() => ({}));
